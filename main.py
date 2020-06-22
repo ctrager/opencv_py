@@ -5,8 +5,12 @@ import cv2
 def myfunc(arg):
     print(arg)
 
-def handler(arg):
-    print("handler", arg)
+def handler1(arg1):
+    print("handler", arg1)
+def handler2(arg1):
+    print("handler", arg1)
+def handler3(ar1):
+    print("handler", arg1)
 
 myfunc("corey")
 
@@ -14,7 +18,12 @@ myfunc("corey")
 cap = cv2.VideoCapture(0)
 
 cv2.namedWindow("w1", cv2.WINDOW_AUTOSIZE)
-cv2.createTrackbar('parm1','w1',0,255,handler)
+cv2.namedWindow("w2", cv2.WINDOW_AUTOSIZE)
+cv2.namedWindow("w3", cv2.WINDOW_AUTOSIZE)
+
+cv2.createTrackbar('parm1', 'w1', 0, 255, handler1)
+cv2.createTrackbar('parm2', 'w1', 0, 255, handler2)
+cv2.createTrackbar('parm3', 'w1', 0, 255, handler3)
 
 # char TrackbarName[50];
 #   sprintf( TrackbarName, "Alpha x %d", alpha_slider_max );
@@ -40,7 +49,14 @@ while(True):
 
     #frame_after = cv2.Canny(frame, 100, 100)
 
+    #frame = imutils.resize(frame, width=500)
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blured = cv2.GaussianBlur(gray, (21, 21), 0)
+
     cv2.imshow('w1',frame)
+    cv2.imshow('w2',gray)
+    cv2.imshow('w3',blured)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 

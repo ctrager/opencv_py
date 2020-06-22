@@ -11,13 +11,13 @@ def myfunc(arg):
     print(arg)
 
 def handler1(arg1):
-    print("handler", arg1)
+    #print("handler", arg1)
     Config.g1 = arg1
     if Config.g1 % 2 == 0:
         Config.g1 = Config.g1 + 1
 
 def handler2(arg1):
-    print("handler", arg1)
+    #print("handler", arg1)
     Config.g2 = arg1
     if Config.g2 % 2 == 0:
         Config.g2 = Config.g2 + 1
@@ -25,56 +25,61 @@ def handler2(arg1):
 def handler3(arg1):
     print("handler", arg1)
 
-myfunc("corey")
+#myfunc("corey")
 
 
-cap = cv2.VideoCapture(0)
+video_capture = cv2.VideoCapture(0)
 
-cv2.namedWindow("w1", cv2.WINDOW_AUTOSIZE)
-cv2.namedWindow("w2", cv2.WINDOW_AUTOSIZE)
-cv2.namedWindow("w3", cv2.WINDOW_AUTOSIZE)
+cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
 
-cv2.createTrackbar('parm1', 'w1', 0, 255, handler1)
-cv2.createTrackbar('parm2', 'w1', 0, 255, handler2)
-cv2.createTrackbar('parm3', 'w1', 0, 255, handler3)
+cv2.createTrackbar("parm1", "window1", 0, 255, handler1)
+cv2.createTrackbar("parm2", "window1", 0, 255, handler2)
+#cv2.createTrackbar('parm3', 'w1', 0, 255, handler3)
 
-# char TrackbarName[50];
-#   sprintf( TrackbarName, "Alpha x %d", alpha_slider_max );
-#   createTrackbar( TrackbarName, "Linear Blend", &alpha_slider, alpha_slider_max, on_trackbar );
-#Note the following (C++ code):
+cv2.setTrackbarPos("parm1", "window1", Config.g1)
+cv2.setTrackbarPos("parm2", "window1", Config.g2)
+
+ret, frame = video_capture.read()
+
+# for scaling
+width = len(frame[0])
+height = len(frame)
+print (width, height)
+scale_factor = .5
+new_size = (int(width * scale_factor), int(height * scale_factor))
 
 while(True):
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-    # print(frame.width, frame.height)
-    #break
-    # Our operations on the frame come here
-    #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+ 
+    # resize
+    frame = cv2.resize(frame, new_size)
 
-    # Display the resulting frame
+    # gray scale
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # blur it
+    blurred_frame = cv2.GaussianBlur(gray_frame, (Config.g1, Config.g2), cv2.BORDER_CONSTANT)
 
-    # for row in frame:
-    #     for p in row:
-    #         #break
-    #         p[0] = 0
-    #         #p[1] = 0
-    #         p[2] = 0
+    # convert it to color so that we can work with matching arrays
+    colored_blurred_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_GRAY2BGR)
 
-    #frame_after = cv2.Canny(frame, 100, 100)
+    # arrange arrays side by side
+    row1 = np.hstack([frame, colored_blurred_frame])
 
-    #frame = imutils.resize(frame, width=500)
-
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blured = cv2.GaussianBlur(gray, (Config.g1, Config.g2), cv2.BORDER_CONSTANT)
-
-    cv2.imshow('w1',frame)
-    cv2.imshow('w2',gray)
-    cv2.imshow('w3',blured)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    # display it
+    cv2.imshow('window1',row1)
+ 
+    # improve this to detect closing of window better
+    key = cv2.waitKey(1) 
+    print(key)
+    if key == 27:  #& 0xFF == ord('q'):
         break
 
-# When everything done, release the capture
-cap.release()
-#cv2.destroyAllWindows().destroyAllWindows()
+    # get next frame
+    ret, frame = video_capture.read()
+
+# clean up
+video_capture.release()
+cv2.destroyAllWindows()
 
 print("goodbye")
+

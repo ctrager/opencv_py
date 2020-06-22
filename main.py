@@ -2,14 +2,27 @@ print("hello")
 import numpy as np
 import cv2
 
+class Config:
+    g1 = 21
+    g2 = 21
+    g3 = 0
+
 def myfunc(arg):
     print(arg)
 
 def handler1(arg1):
     print("handler", arg1)
+    Config.g1 = arg1
+    if Config.g1 % 2 == 0:
+        Config.g1 = Config.g1 + 1
+
 def handler2(arg1):
     print("handler", arg1)
-def handler3(ar1):
+    Config.g2 = arg1
+    if Config.g2 % 2 == 0:
+        Config.g2 = Config.g2 + 1
+
+def handler3(arg1):
     print("handler", arg1)
 
 myfunc("corey")
@@ -52,7 +65,7 @@ while(True):
     #frame = imutils.resize(frame, width=500)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blured = cv2.GaussianBlur(gray, (21, 21), 0)
+    blured = cv2.GaussianBlur(gray, (Config.g1, Config.g2), cv2.BORDER_CONSTANT)
 
     cv2.imshow('w1',frame)
     cv2.imshow('w2',gray)

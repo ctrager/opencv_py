@@ -6,7 +6,7 @@ import time
 class Config:
     gauss_blur = 25
     t1 = 127
-    scale_factor = .4
+    scale_factor = .2
     new_size = [0,0]
     pixel_count = 0
     lightness = 120
@@ -18,14 +18,17 @@ class Config:
     recording_length_in_seconds = 3
     cooldown_in_seconds = 10
     framerate = 20
+    create_video = 0
 
 BLUE = 0
 GREEN = 1
 RED = 2
 ORIGINAL_FRAME = 0
 DIFF_FRAME = 1
+STATE_NONE = "none"
+STATE_RECORDING = "recording"
 
-state = "none"
+state = STATE_NONE
 
 def handle_gauss_blur(arg1):
     Config.gauss_blur = arg1
@@ -108,7 +111,9 @@ cv2.setTrackbarPos("saturation", "window1", Config.saturation)
 cv2.setTrackbarPos("yellow_green", "window1", Config.yellow_green)
 cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
 
-video_capture = cv2.VideoCapture(0)
+#video_capture = cv2.VideoCapture(0)
+video_capture = cv2.VideoCapture(
+    "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
 
 # get first frame
 ret, frame = video_capture.read()
@@ -139,16 +144,15 @@ while(True):
     if now - prev_time > Config.interval_in_milliseconds:
         # how much has changed
   
-        if state == "none":
+        if state == STATE_NONE:
             delta_frame_gray = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
             pixels_with_motion_count = cv2.countNonZero(delta_frame_gray)
 
             motion_percent = round(pixels_with_motion_count/Config.pixel_count * 100)
             #print(pixels_with_motion_count, Config.pixel_count, motion_percent)
     
-            if motion_percent > Config.motion_threshold_percent:
-                change_state("recording")
-                print(state)
+            if Config.create_video == 1 and motion_percent > Config.motion_threshold_percent:
+                change_state(STATE_RECORDING)
                 recording_start_time = now
     
                 video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, (width, height))
@@ -163,17 +167,16 @@ while(True):
     
     cv2.imshow('window1',display_image)
 
-    if state == "recording":
+    if state == STATE_RECORDING:
 
         if now - recording_start_time > (Config.recording_length_in_seconds * 1000):
             # finish recording
             video_file.release()
-            change_state("none")
-            print(state)
+            change_state(STATE_NONE)
         else:
             # continue recording
             video_file.write(frame)
-            
+         
 
     # detect window closing
     key = cv2.waitKey(1) 
@@ -192,4 +195,3 @@ video_capture.release()
 cv2.destroyAllWindows()
 
 print("goodbye")
-

@@ -165,7 +165,7 @@ while(True):
             if Config.create_video == 1 and motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
                 recording_start_time = now
-                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, (width, height))
+                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, (460, 450))
 
         prev_frame = altered_frames[DIFF_FRAME]
         prev_time = now

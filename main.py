@@ -17,6 +17,7 @@ class Config:
     motion_threshold_percent = 10
     recording_length_in_seconds = 3
     cooldown_in_seconds = 10
+    framerate = 20
 
 BLUE = 0
 GREEN = 1
@@ -48,8 +49,12 @@ def current_milliseconds():
 
 def change_state(new_state):
     global state
-    print(current_milliseconds(), "state", state, new_state)
+    now = time.strftime("%Y-%m-%d %H:%M:%S")  
+    print(now, "state", state, new_state)
     state = new_state
+
+def get_filename():
+    return "./videos/video_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".mp4"
 
 def process_frame(frame):
     
@@ -123,25 +128,30 @@ prev_time = current_milliseconds()
 
 recording_start_time = 0
 
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+
 while(True):
 
     now = current_milliseconds()
 
     altered_frames = process_frame(frame)
 
-
     if now - prev_time > Config.interval_in_milliseconds:
         # how much has changed
-        delta_frame_gray = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
-        pixels_with_motion_count = cv2.countNonZero(delta_frame_gray)
-
-        motion_percent = round(pixels_with_motion_count/Config.pixel_count * 100)
-        #print(pixels_with_motion_count, Config.pixel_count, motion_percent)
   
-        if motion_percent > Config.motion_threshold_percent:
-            change_state("recording")
-            print(state)
-            recording_start_time = now
+        if state == "none":
+            delta_frame_gray = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
+            pixels_with_motion_count = cv2.countNonZero(delta_frame_gray)
+
+            motion_percent = round(pixels_with_motion_count/Config.pixel_count * 100)
+            #print(pixels_with_motion_count, Config.pixel_count, motion_percent)
+    
+            if motion_percent > Config.motion_threshold_percent:
+                change_state("recording")
+                print(state)
+                recording_start_time = now
+    
+                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, (width, height))
 
         prev_frame = altered_frames[DIFF_FRAME]
         prev_time = now
@@ -154,13 +164,16 @@ while(True):
     cv2.imshow('window1',display_image)
 
     if state == "recording":
+
         if now - recording_start_time > (Config.recording_length_in_seconds * 1000):
             # finish recording
+            video_file.release()
             change_state("none")
             print(state)
         else:
             # continue recording
-            pass
+            video_file.write(frame)
+            
 
     # detect window closing
     key = cv2.waitKey(1) 

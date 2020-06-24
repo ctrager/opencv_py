@@ -2,21 +2,39 @@ import numpy as np
 import cv2
 import time
 
+#todo
+# cooldown
+# better configurability
+# detection regions
+# experiments with 
+# https://stackoverflow.com/questions/189943/how-can-i-quantify-difference-between-two-images
+# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_video/py_lucas_kanade/py_lucas_kanade.html
+
+
 class Config:
     gauss_blur = 25
     screen_scale_factor = .2
-    new_size = [0,0]
     pixel_count = 0
     lightness = 40
-    saturation = 100
+    saturation = 40
     yellow_green = 15
-    blue_green = 100
+    blue_green = 90
     interval_in_milliseconds = 400
-    motion_threshold_percent = 4
+    motion_threshold_percent = 6
     recording_length_in_seconds = 8
-    cooldown_in_seconds = 10
-    framerate = 20
+    cooldown_in_seconds = 22
+    framerate = 24
     create_video = 1
+    width = 1920
+    height = 1080
+    crop_y1 = 0
+    crop_y2 = 900
+    crop_x1 = 495
+    crop_x2 = 1425
+    # new size is 930 X 900
+    new_size_for_analysis = (310,300) # 1/3 size
+    new_size_for_video = (620,600) # 2/2 size
+    pixel_count = 310 * 300
 
 BLUE = 0
 GREEN = 1
@@ -25,8 +43,19 @@ ORIGINAL_FRAME = 0
 DIFF_FRAME = 1
 STATE_NONE = "none"
 STATE_RECORDING = "recording"
+STATE_COOLDOWN = "cooldown"
 
 state = STATE_NONE
+
+def prep_frame_for_video(frame):
+    img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
+    img = cv2.resize(img, Config.new_size_for_video)
+    return img
+
+def prep_frame_for_analysis(frame):
+    img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
+    img = cv2.resize(img, Config.new_size_for_analysis)
+    return img
 
 def handle_gauss_blur(arg1):
     Config.gauss_blur = arg1
@@ -54,23 +83,20 @@ def handle_create_video(arg1):
 def current_milliseconds():
     return round(time.time() * 1000)
 
+
+state_start_time = 0
+
 def change_state(new_state):
     global state
-    now = time.strftime("%Y-%m-%d %H:%M:%S")  
-    print(now, "state", state, new_state)
+    global state_start_time
+    now_string = time.strftime("%Y-%m-%d %H:%M:%S")  
     state = new_state
-
+    state_start_time = current_milliseconds()
+    print(now_string, "state", state, new_state)
+ 
 def get_filename():
     return "./videos/video_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".mp4"
 
-def prep_frame_for_analysis(frame):
-    return prep_frame_for_video(frame)
-
-def prep_frame_for_video(frame):
-    img = frame[0:900, 500:1420]
-    # now its 920 x 900
-    img = cv2.resize(img, (460,450))
-    return img
 
 def process_frame(frame):
     
@@ -133,15 +159,10 @@ width = len(frame[0])
 height = len(frame)
 print (width, height)
 
-Config.new_size = (int(width * Config.screen_scale_factor), int(height * Config.screen_scale_factor))
-Config.pixel_count = Config.new_size[0] * Config.new_size[1]
-
 prev_frame = process_frame(frame)[DIFF_FRAME]
 delta_frame_gray = prev_frame
 
 prev_time = current_milliseconds()
-
-recording_start_time = 0
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -164,14 +185,14 @@ while(True):
         if state == STATE_NONE:
             if Config.create_video == 1 and motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
-                recording_start_time = now
-                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, (460, 450))
+                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, 
+                    Config.new_size_for_video)
 
         prev_frame = altered_frames[DIFF_FRAME]
         prev_time = now
 
     cv2.putText(altered_frames[ORIGINAL_FRAME], state + ":" + str(motion_percent), 
-        (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, .5, (255,255,0), 1, cv2.LINE_AA)
+        (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, .8, (255,255,0), 2, cv2.LINE_AA)
     
     display_image = np.hstack([
         altered_frames[ORIGINAL_FRAME], 
@@ -181,16 +202,19 @@ while(True):
     cv2.imshow('window1',display_image)
 
     if state == STATE_RECORDING:
-
-        if now - recording_start_time > (Config.recording_length_in_seconds * 1000):
+        if now - state_start_time > (Config.recording_length_in_seconds * 1000):
             # finish recording
             video_file.release()
-            change_state(STATE_NONE)
+            change_state(STATE_COOLDOWN)
         else:
             # continue recording
             frame_for_video = prep_frame_for_video(frame)
             video_file.write(frame_for_video)
-         
+    
+    elif state == STATE_COOLDOWN:
+        if now - state_start_time > (Config.cooldown_in_seconds * 1000):
+            change_state(STATE_NONE)
+
 
     # detect window closing
     key = cv2.waitKey(1) 

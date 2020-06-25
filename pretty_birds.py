@@ -12,7 +12,7 @@ import time
 
 
 class Config:
-    gauss_blur = 25
+    gauss_blur = 3
     screen_scale_factor = .2
     pixel_count = 0
     lightness = 40
@@ -46,6 +46,13 @@ STATE_RECORDING = "recording"
 STATE_COOLDOWN = "cooldown"
 
 state = STATE_NONE
+state_start_time = 0
+
+prev_frame = []
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+font = cv2.FONT_HERSHEY_SIMPLEX
+motion_percent = 0
 
 def prep_frame_for_video(frame):
     img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
@@ -83,9 +90,6 @@ def handle_create_video(arg1):
 def current_milliseconds():
     return round(time.time() * 1000)
 
-
-state_start_time = 0
-
 def change_state(new_state):
     global state
     global state_start_time
@@ -96,7 +100,6 @@ def change_state(new_state):
  
 def get_filename():
     return "./videos/video_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".mp4"
-
 
 def process_frame(frame):
     
@@ -128,7 +131,6 @@ def process_frame(frame):
     # others appended
     return [small_frame, in_range_all_gray]
 
-prev_frame = []
 
 # build windows
 cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
@@ -163,10 +165,6 @@ prev_frame = process_frame(frame)[DIFF_FRAME]
 delta_frame_gray = prev_frame
 
 prev_time = current_milliseconds()
-
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-font = cv2.FONT_HERSHEY_SIMPLEX
-motion_percent = 0
 
 while(True):
 
@@ -214,7 +212,6 @@ while(True):
     elif state == STATE_COOLDOWN:
         if now - state_start_time > (Config.cooldown_in_seconds * 1000):
             change_state(STATE_NONE)
-
 
     # detect window closing
     key = cv2.waitKey(1) 

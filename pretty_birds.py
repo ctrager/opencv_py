@@ -10,15 +10,17 @@ import time
 # https://stackoverflow.com/questions/189943/how-can-i-quantify-difference-between-two-images
 # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_video/py_lucas_kanade/py_lucas_kanade.html
 
-
+# color calculator
+# https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     gauss_blur = 3
     screen_scale_factor = .2
     pixel_count = 0
-    lightness = 40
-    saturation = 40
-    yellow_green = 15
-    blue_green = 90
+    # 0-255
+    lightness = 127
+    saturation = 127
+    yellow_green = 10
+    blue_green = 165
     interval_in_milliseconds = 400
     motion_threshold_percent = 6
     recording_length_in_seconds = 8

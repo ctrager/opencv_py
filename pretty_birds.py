@@ -17,14 +17,14 @@ class Config:
     screen_scale_factor = .2
     pixel_count = 0
     # 0-255
-    lightness = 127
-    saturation = 127
+    lightness = 50
+    saturation = 50
     yellow_green = 10
-    blue_green = 165
+    blue_green = 160
     interval_in_milliseconds = 400
-    motion_threshold_percent = 6
+    motion_threshold_percent = 5
     recording_length_in_seconds = 8
-    cooldown_in_seconds = 22
+    cooldown_in_seconds = 12
     framerate = 24
     create_video = 1
     width = 1920
@@ -99,9 +99,6 @@ def change_state(new_state):
     state = new_state
     state_start_time = current_milliseconds()
     print(now_string, "state", state, new_state)
- 
-def get_filename():
-    return "./videos/video_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".mp4"
 
 def process_frame(frame):
     
@@ -185,7 +182,11 @@ while(True):
         if state == STATE_NONE:
             if Config.create_video == 1 and motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
-                video_file = cv2.VideoWriter(get_filename(), fourcc, Config.framerate, 
+                filename =  "./videos/video_" \
+                    + time.strftime("%Y-%m-%d-%H-%M-%S") \
+                    + "_pct" + str(motion_percent) + ".mp4"
+
+                video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                     Config.new_size_for_video)
 
         prev_frame = altered_frames[DIFF_FRAME]

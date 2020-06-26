@@ -7,16 +7,30 @@ cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
 
 class Config:
     saturation = 90
-    lightness = 13
-   
+    lightness = 20
+    yellow_green = 40
+    blue_green = 100
+    
 def handle_saturation(val):
     Config.saturation = val
+cv2.createTrackbar("saturation", "window1", 0, 255, handle_saturation)
+cv2.setTrackbarPos("saturation", "window1", Config.saturation)
+
 def handle_lightness(val):
     Config.lightness = val
-cv2.createTrackbar("saturation", "window1", 0, 300, handle_saturation)
-cv2.createTrackbar("lightness", "window1", 0, 300, handle_lightness)
-cv2.setTrackbarPos("saturation", "window1", Config.saturation)
+cv2.createTrackbar("lightness", "window1", 0, 255, handle_lightness)
 cv2.setTrackbarPos("lightness", "window1", Config.lightness)
+
+def handle_yellow_green(val):
+    Config.yellow_green = val
+cv2.createTrackbar("yellow_green", "window1", 0, 180, handle_yellow_green)
+cv2.setTrackbarPos("yellow_green", "window1", Config.yellow_green)
+
+def handle_blue_green(val):
+    Config.blue_green = val
+cv2.createTrackbar("blue_green", "window1", 0, 180, handle_blue_green)
+cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
+
 
 def prep_frame_for_video(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -25,10 +39,10 @@ def prep_frame_for_video(frame):
 
     in_range1 = cv2.inRange(hsv, 
         (0, Config.saturation, Config.lightness), 
-        (15, 255, 255))
+        (Config.yellow_green, 255, 255))
     
     in_range2 = cv2.inRange(hsv, 
-        (165, Config.saturation, Config.lightness), 
+        (Config.blue_green, Config.saturation, Config.lightness), 
         (180, 255, 255))
 
     in_range_all_gray = cv2.bitwise_or(in_range1, in_range2)

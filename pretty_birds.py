@@ -22,7 +22,7 @@ class Config:
     yellow_green = 10
     blue_green = 160
     interval_in_milliseconds = 400
-    motion_threshold_percent = 5
+    motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
     framerate = 24
@@ -104,10 +104,12 @@ def process_frame(frame):
     
     # resize
     small_frame = prep_frame_for_analysis(frame)
-    
+
     # blur
     blurred_frame = cv2.GaussianBlur(small_frame,
         (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+
+    gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
@@ -124,11 +126,19 @@ def process_frame(frame):
 
     in_range_all_gray = cv2.bitwise_or(in_range1, in_range2)
 
+    gray_without_red = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
+    gray_without_red_bgr = cv2.cvtColor(gray_without_red, cv2.COLOR_GRAY2BGR)
+
+    just_red = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
+    
+    both = cv2.bitwise_or(gray_without_red_bgr, just_red)
+
+
     # return an array of frames
     # "original" is index 0
     # the one for diffing is index 1
     # others appended
-    return [small_frame, in_range_all_gray]
+    return [small_frame, just_red, both]
 
 
 # build windows
@@ -161,7 +171,8 @@ height = len(frame)
 print (width, height)
 
 prev_frame = process_frame(frame)[DIFF_FRAME]
-delta_frame_gray = prev_frame
+delta_frame = prev_frame
+delta_bgr = prev_frame
 
 prev_time = current_milliseconds()
 
@@ -174,8 +185,9 @@ while(True):
     if now - prev_time > Config.interval_in_milliseconds:
         # how much has changed
   
-        delta_frame_gray = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
-        pixels_with_motion_count = cv2.countNonZero(delta_frame_gray)
+        delta_bgr = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
+        delta_gray = cv2.cvtColor(delta_bgr, cv2.COLOR_BGR2GRAY)
+        pixels_with_motion_count = cv2.countNonZero(delta_gray)
 
         motion_percent = round(pixels_with_motion_count/Config.pixel_count * 100)
   
@@ -197,8 +209,8 @@ while(True):
     
     display_image = np.hstack([
         altered_frames[ORIGINAL_FRAME], 
-        cv2.cvtColor(altered_frames[DIFF_FRAME], cv2.COLOR_GRAY2BGR),
-        cv2.cvtColor(delta_frame_gray, cv2.COLOR_GRAY2BGR)])
+        altered_frames[2],
+        delta_bgr])
 
     cv2.imshow('window1',display_image)
 

@@ -35,7 +35,8 @@ class Config:
     # new size is 930 X 900
     new_size_for_analysis = (310,300) # 1/3 size
     new_size_for_video = (620,600) # 2/2 size
-    rect_points = ((60,100),(134,280),(186,100),(260,280))
+    #rect_points = ((60,100),(134,280),(186,100),(260,280))
+    rect_points = ((60,100),(260,280))
 
 BLUE = 0
 GREEN = 1
@@ -135,10 +136,7 @@ def process_frame(frame):
     upper_left = Config.rect_points[0]
     bottom_right = Config.rect_points[1]
     cv2.rectangle(small_frame, upper_left, bottom_right, (255,255,0), 1)
-    upper_left = Config.rect_points[2]
-    bottom_right = Config.rect_points[3]
-    cv2.rectangle(small_frame, upper_left, bottom_right, (255,255,0), 1)
- 
+    
     # return an array of frames
     # "original" is index 0
     # the one for diffing is index 1
@@ -170,7 +168,7 @@ video_capture = cv2.VideoCapture(
 # get first frame
 ret, frame = video_capture.read()
 
-# for scaling
+# size
 width = len(frame[0])
 height = len(frame)
 print (width, height)
@@ -182,18 +180,14 @@ delta_bgr = prev_frame
 prev_time = current_milliseconds()
 
 def measure_motion(upper_left, lower_right, curr, prev):
- 
-    ret, prev_jpg = cv2.imencode('.jpg', 
-        prev[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]])
-    
-    ret, curr_jpg = cv2.imencode('.jpg', 
-        curr[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]]) 
-
-    motion_score = abs(len(curr_jpg) - len(prev_jpg))
+    delta = cv2.absdiff(
+        altered_frames[DIFF_FRAME][upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]], 
+        prev_frame[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]])
+    pixels_with_motion_count = cv2.countNonZero(cv2.cvtColor(delta, cv2.COLOR_BGR2GRAY))
     pixel_count = (upper_left[0]-lower_right[0]) * (upper_left[1]-lower_right[1])
-    #print("ms", motion_score, pixel_count, upper_left, lower_right)
-    return motion_score, pixel_count
-
+    #print(pixels_with_motion_count, pixel_count)
+    return pixels_with_motion_count, pixel_count
+ 
 while(True):
 
     now = current_milliseconds()
@@ -204,17 +198,18 @@ while(True):
         # how much has changed
   
         delta_bgr = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
- 
-        motion_score_1, pixel_count_1 = measure_motion(
+        delta_gray = cv2.cvtColor(delta_bgr, cv2.COLOR_BGR2GRAY)
+
+        pixels_with_motion_count, pixel_count = measure_motion(
             Config.rect_points[0], Config.rect_points[1], altered_frames[DIFF_FRAME], prev_frame)
-        motion_score_2, pixel_count_2 = measure_motion(
-            Config.rect_points[2], Config.rect_points[3], altered_frames[DIFF_FRAME], prev_frame)
+        #pixels_with_motion_count_2, pixel_count_2 = measure_motion(
+        #    Config.rect_points[0], Config.rect_points[1], altered_frames[DIFF_FRAME], prev_frame)
        
-        motion_score = motion_score_1 + motion_score_2
-        pixel_count = pixel_count_1 + pixel_count_2
-        motion_percent = round(motion_score/pixel_count * 500)
-        # print(motion_score, motion_percent, pixel_count)
-    
+        #pixels_with_motion_count = pixels_with_motion_count_1 + pixels_with_motion_count_2
+        #pixel_count = pixel_count_1 + pixel_count_2
+        motion_percent = round(pixels_with_motion_count/pixel_count * 100)
+        print(pixels_with_motion_count, motion_percent, pixel_count)
+   
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)

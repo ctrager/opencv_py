@@ -145,7 +145,6 @@ def measure_motion(upper_left, lower_right, curr, prev):
 
     motion_score = abs(len(curr_jpg) - len(prev_jpg))
     pixel_count = (upper_left[0]-lower_right[0]) * (upper_left[1]-lower_right[1])
-    print("ms", motion_score, pixel_count, upper_left, lower_right)
     return motion_score, pixel_count
 
 while(True):
@@ -184,11 +183,7 @@ while(True):
         (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, .8, (255,255,0), 2, cv2.LINE_AA)
     
     display_image = np.hstack([
-        altered_frames[ORIGINAL_FRAME], 
-        altered_frames[2],
-        cv2.cvtColor(prev_frame, cv2.COLOR_GRAY2BGR),
-        
-        cv2.cvtColor(delta_gray, cv2.COLOR_GRAY2BGR)
+        altered_frames[ORIGINAL_FRAME] 
     ])
 
     cv2.imshow('window1',display_image)

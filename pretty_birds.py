@@ -29,14 +29,14 @@ class Config:
     width = 1920
     height = 1080
     crop_y1 = 0
-    crop_y2 = 900
+    crop_y2 = 960
     crop_x1 = 495
     crop_x2 = 1425
-    # new size is 930 X 900
-    new_size_for_analysis = (310,300) # 1/3 size
-    new_size_for_video = (620,600) # 2/2 size
+    # new size is 930 X 960
+    new_size_for_analysis = (310,320) # 1/3 size
+    new_size_for_video = (620,640) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
-    rect_points = ((60,100),(260,280))
+    rect_points = ((60,90),(260,290))
 
 BLUE = 0
 GREEN = 1
@@ -132,11 +132,7 @@ def process_frame(frame):
     just_red = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
     
     both = cv2.bitwise_or(gray_without_red_bgr, just_red)
-
-    upper_left = Config.rect_points[0]
-    bottom_right = Config.rect_points[1]
-    cv2.rectangle(small_frame, upper_left, bottom_right, (255,255,0), 1)
-    
+   
     # return an array of frames
     # "original" is index 0
     # the one for diffing is index 1
@@ -172,44 +168,44 @@ ret, frame = video_capture.read()
 width = len(frame[0])
 height = len(frame)
 print (width, height)
+top_left = Config.rect_points[0]
+bottom_right = Config.rect_points[1]
+pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 
 prev_frame = process_frame(frame)[DIFF_FRAME]
-delta_frame = prev_frame
+ret, prev_jpg = cv2.imencode('.jpg', prev_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]])
+
+# just for display purposes
 delta_bgr = prev_frame
 
 prev_time = current_milliseconds()
-
-def measure_motion(upper_left, lower_right, curr, prev):
-    delta = cv2.absdiff(
-        altered_frames[DIFF_FRAME][upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]], 
-        prev_frame[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]])
-    pixels_with_motion_count = cv2.countNonZero(cv2.cvtColor(delta, cv2.COLOR_BGR2GRAY))
-    pixel_count = (upper_left[0]-lower_right[0]) * (upper_left[1]-lower_right[1])
-    #print(pixels_with_motion_count, pixel_count)
-    return pixels_with_motion_count, pixel_count
+start_time = prev_time
+frame_count = 0
+fps = 0
  
 while(True):
+    frame_count += 1
 
     now = current_milliseconds()
 
     altered_frames = process_frame(frame)
 
     if now - prev_time > Config.interval_in_milliseconds:
+        elapsed_seconds = (now - start_time)/1000
+        fps = round(frame_count/elapsed_seconds)
+      
         # how much has changed
-  
-        delta_bgr = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
-        delta_gray = cv2.cvtColor(delta_bgr, cv2.COLOR_BGR2GRAY)
 
-        pixels_with_motion_count, pixel_count = measure_motion(
-            Config.rect_points[0], Config.rect_points[1], altered_frames[DIFF_FRAME], prev_frame)
-        #pixels_with_motion_count_2, pixel_count_2 = measure_motion(
-        #    Config.rect_points[0], Config.rect_points[1], altered_frames[DIFF_FRAME], prev_frame)
-       
-        #pixels_with_motion_count = pixels_with_motion_count_1 + pixels_with_motion_count_2
-        #pixel_count = pixel_count_1 + pixel_count_2
-        motion_percent = round(pixels_with_motion_count/pixel_count * 100)
-        print(pixels_with_motion_count, motion_percent, pixel_count)
-   
+        top_left = Config.rect_points[0]
+        bottom_right = Config.rect_points[1]
+        ret, curr_jpg = cv2.imencode('.jpg', 
+            altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]])
+        
+        delta = abs(len(curr_jpg) - len(prev_jpg))
+
+        motion_percent = round(delta/len(prev_jpg)*100)
+        print(delta, len(curr_jpg), len(prev_jpg), motion_percent)
+ 
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
@@ -217,20 +213,29 @@ while(True):
                     filename =  "./videos/video_" \
                         + time.strftime("%Y-%m-%d-%H-%M-%S") \
                         + "_pct" + str(motion_percent) + ".mp4"
-
+                    print(filename)
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                         Config.new_size_for_video)
 
-        prev_frame = altered_frames[DIFF_FRAME]
+        prev_jpg = curr_jpg
+        cv2.imshow("jpeg", cv2.imdecode(curr_jpg, cv2.IMREAD_ANYDEPTH))
         prev_time = now
 
-    cv2.putText(altered_frames[ORIGINAL_FRAME], state + ":" + str(motion_percent), 
-        (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, .8, (255,255,0), 2, cv2.LINE_AA)
-    
+    # text on image
+    text_on_image = str(motion_percent) + "," + state + "," + str(fps)
+    cv2.putText(altered_frames[ORIGINAL_FRAME], text_on_image,
+        (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, 
+        .8, (255,255,0), 2, cv2.LINE_AA)
+
+    # rectange on image    
+    top_left = Config.rect_points[0]
+    bottom_right = Config.rect_points[1]
+    cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
+ 
     display_image = np.hstack([
         altered_frames[ORIGINAL_FRAME], 
-        altered_frames[2],
-        delta_bgr])
+        altered_frames[2]
+    ])
 
     cv2.imshow('window1',display_image)
 

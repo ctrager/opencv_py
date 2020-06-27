@@ -18,24 +18,22 @@ class Config:
     # 0-255
     lightness = 50
     saturation = 50
-    yellow_green = 10
-    blue_green = 160
     interval_in_milliseconds = 400
     motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
     framerate = 24
-    create_video = 1
+    create_video = 0
     width = 1920
     height = 1080
     crop_y1 = 0
     crop_y2 = 900
-    crop_x1 = 495
-    crop_x2 = 1425
-    # new size is 930 X 900
-    new_size_for_analysis = (310,300) # 1/3 size
-    new_size_for_video = (620,600) # 2/2 size
-    rect_points = ((60,100),(134,280),(186,100),(260,280))
+    crop_x1 = 200
+    crop_x2 = 1500
+    # new size is 1500 x 900
+    new_size_for_analysis = (325,225) 
+    new_size_for_video = (975,675) 
+    rect_points = ((40,90),(110,200),(200,80),(280,200))
 
 BLUE = 0
 GREEN = 1
@@ -70,18 +68,6 @@ def handle_gauss_blur(arg1):
     if Config.gauss_blur % 2 == 0:
         Config.gauss_blur = Config.gauss_blur + 1
 
-def handle_lightness(arg1):
-    Config.lightness = arg1
-
-def handle_saturation(arg1):
-    Config.saturation = arg1
-
-def handle_yellow_green(arg1):
-    Config.yellow_green = arg1
-
-def handle_blue_green(arg1):
-    Config.blue_green = arg1
-
 def handle_motion_threshold_percent(arg1):
     Config.motion_threshold_percent = arg1
 
@@ -108,30 +94,9 @@ def process_frame(frame):
     blurred_frame = cv2.GaussianBlur(small_frame,
         (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
-
-    # Convert BGR to HSV
-    hsv = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
-
-    # red to yellow, but not into green
-    in_range1 = cv2.inRange(hsv, 
-        (0, Config.saturation, Config.lightness), 
-        (Config.yellow_green, 255, 255))
+    gray_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
+    gray_frame_bgr = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2BGR)
     
-    # red to maybe turqoise, but not into green
-    in_range2 = cv2.inRange(hsv, 
-        (Config.blue_green, Config.saturation, Config.lightness), 
-        (180, 255, 255))
-
-    in_range_all_gray = cv2.bitwise_or(in_range1, in_range2)
-
-    gray_without_red = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
-    gray_without_red_bgr = cv2.cvtColor(gray_without_red, cv2.COLOR_GRAY2BGR)
-
-    just_red = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
-    
-    both = cv2.bitwise_or(gray_without_red_bgr, just_red)
-
     upper_left = Config.rect_points[0]
     bottom_right = Config.rect_points[1]
     cv2.rectangle(small_frame, upper_left, bottom_right, (255,255,0), 1)
@@ -139,11 +104,7 @@ def process_frame(frame):
     bottom_right = Config.rect_points[3]
     cv2.rectangle(small_frame, upper_left, bottom_right, (255,255,0), 1)
  
-    # return an array of frames
-    # "original" is index 0
-    # the one for diffing is index 1
-    # others appended
-    return [small_frame, just_red, both]
+    return [small_frame, gray_frame, gray_frame_bgr]
 
 
 # build windows
@@ -151,21 +112,13 @@ cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
 
 cv2.createTrackbar("create_video", "window1", 0, 1, handle_create_video)
 cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
-cv2.createTrackbar("lightness", "window1", 0, 255, handle_lightness)
-cv2.createTrackbar("saturation", "window1", 0, 255, handle_saturation)
-cv2.createTrackbar("yellow_green", "window1", 0, 255, handle_yellow_green)
-cv2.createTrackbar("blue_green", "window1", 0, 255, handle_blue_green)
 
 cv2.setTrackbarPos("create_video", "window1", Config.create_video)
 cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
-cv2.setTrackbarPos("lightness", "window1", Config.lightness)
-cv2.setTrackbarPos("saturation", "window1", Config.saturation)
-cv2.setTrackbarPos("yellow_green", "window1", Config.yellow_green)
-cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = cv2.VideoCapture(
-    "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
+    "rtsp://corey:password1@10.0.0.9/live")
 
 # get first frame
 ret, frame = video_capture.read()
@@ -175,23 +128,24 @@ width = len(frame[0])
 height = len(frame)
 print (width, height)
 
+encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 98]
 prev_frame = process_frame(frame)[DIFF_FRAME]
 delta_frame = prev_frame
-delta_bgr = prev_frame
+delta_gray = prev_frame
 
 prev_time = current_milliseconds()
 
 def measure_motion(upper_left, lower_right, curr, prev):
- 
+   
     ret, prev_jpg = cv2.imencode('.jpg', 
         prev[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]])
     
     ret, curr_jpg = cv2.imencode('.jpg', 
-        curr[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]]) 
+        curr[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]])
 
     motion_score = abs(len(curr_jpg) - len(prev_jpg))
     pixel_count = (upper_left[0]-lower_right[0]) * (upper_left[1]-lower_right[1])
-    #print("ms", motion_score, pixel_count, upper_left, lower_right)
+    print("ms", motion_score, pixel_count, upper_left, lower_right)
     return motion_score, pixel_count
 
 while(True):
@@ -202,9 +156,6 @@ while(True):
 
     if now - prev_time > Config.interval_in_milliseconds:
         # how much has changed
-  
-        delta_bgr = cv2.absdiff(altered_frames[DIFF_FRAME], prev_frame)
- 
         motion_score_1, pixel_count_1 = measure_motion(
             Config.rect_points[0], Config.rect_points[1], altered_frames[DIFF_FRAME], prev_frame)
         motion_score_2, pixel_count_2 = measure_motion(
@@ -212,8 +163,8 @@ while(True):
        
         motion_score = motion_score_1 + motion_score_2
         pixel_count = pixel_count_1 + pixel_count_2
-        motion_percent = round(motion_score/pixel_count * 500)
-        # print(motion_score, motion_percent, pixel_count)
+        motion_percent = round(motion_score/pixel_count * 100)
+        #print(pixels_with_motion_count, motion_percent, pixel_count)
     
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
@@ -235,7 +186,10 @@ while(True):
     display_image = np.hstack([
         altered_frames[ORIGINAL_FRAME], 
         altered_frames[2],
-        delta_bgr])
+        cv2.cvtColor(prev_frame, cv2.COLOR_GRAY2BGR),
+        
+        cv2.cvtColor(delta_gray, cv2.COLOR_GRAY2BGR)
+    ])
 
     cv2.imshow('window1',display_image)
 

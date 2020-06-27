@@ -164,16 +164,13 @@ video_capture = cv2.VideoCapture(
 # get first frame
 ret, frame = video_capture.read()
 
-# size
-width = len(frame[0])
-height = len(frame)
-print (width, height)
 top_left = Config.rect_points[0]
 bottom_right = Config.rect_points[1]
 pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 
 prev_frame = process_frame(frame)[DIFF_FRAME]
-ret, prev_jpg = cv2.imencode('.jpg', prev_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]])
+prev_frame = prev_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+prev_sum = np.sum(prev_frame, dtype=np.int64)
 
 # just for display purposes
 delta_bgr = prev_frame
@@ -198,14 +195,13 @@ while(True):
 
         top_left = Config.rect_points[0]
         bottom_right = Config.rect_points[1]
-        ret, curr_jpg = cv2.imencode('.jpg', 
-            altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]])
-        
-        delta = abs(len(curr_jpg) - len(prev_jpg))
-
-        motion_percent = round(delta/len(prev_jpg)*100)
-        print(delta, len(curr_jpg), len(prev_jpg), motion_percent)
- 
+        curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+        curr_sum = np.sum(curr_frame, dtype=np.int64)
+    
+        diff = abs(curr_sum - prev_sum)
+        motion_percent = round((diff/prev_sum) * 100)
+        cv2.imshow("p", np.hstack([curr_frame, prev_frame]))
+     
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
@@ -217,8 +213,9 @@ while(True):
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                         Config.new_size_for_video)
 
-        prev_jpg = curr_jpg
-        cv2.imshow("jpeg", cv2.imdecode(curr_jpg, cv2.IMREAD_ANYDEPTH))
+        prev_frame = curr_frame
+        prev_sum = curr_sum
+        
         prev_time = now
 
     # text on image

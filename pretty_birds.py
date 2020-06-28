@@ -20,12 +20,12 @@ class Config:
     saturation = 50
     yellow_green = 10
     blue_green = 160
-    interval_in_milliseconds = 400
+    interval_in_milliseconds = 2000
     motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
     framerate = 24
-    create_video = 1
+    create_video = 0
     width = 1920
     height = 1080
     crop_y1 = 0
@@ -89,6 +89,9 @@ def handle_motion_threshold_percent(arg1):
 def handle_create_video(arg1):
     Config.create_video = arg1
 
+def handle_interval(arg1):
+    Config.interval_in_milliseconds = arg1 * 10
+
 def current_milliseconds():
     return round(time.time() * 1000)
 
@@ -109,7 +112,7 @@ def process_frame(frame):
     blurred_frame = cv2.GaussianBlur(small_frame,
         (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
@@ -137,6 +140,8 @@ def process_frame(frame):
     # "original" is index 0
     # the one for diffing is index 1
     # others appended
+    # return [small_frame, just_red, both]
+   
     return [small_frame, just_red, both]
 
 
@@ -149,6 +154,7 @@ cv2.createTrackbar("lightness", "window1", 0, 255, handle_lightness)
 cv2.createTrackbar("saturation", "window1", 0, 255, handle_saturation)
 cv2.createTrackbar("yellow_green", "window1", 0, 255, handle_yellow_green)
 cv2.createTrackbar("blue_green", "window1", 0, 255, handle_blue_green)
+cv2.createTrackbar("interval", "window1", 0, 400, handle_interval)
 
 cv2.setTrackbarPos("create_video", "window1", Config.create_video)
 cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
@@ -156,6 +162,7 @@ cv2.setTrackbarPos("lightness", "window1", Config.lightness)
 cv2.setTrackbarPos("saturation", "window1", Config.saturation)
 cv2.setTrackbarPos("yellow_green", "window1", Config.yellow_green)
 cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
+cv2.setTrackbarPos("interval", "window1", round(Config.interval_in_milliseconds / 10))
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = cv2.VideoCapture(
@@ -170,7 +177,14 @@ pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 
 prev_frame = process_frame(frame)[DIFF_FRAME]
 prev_frame = prev_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-prev_sum = np.sum(prev_frame, dtype=np.int64)
+
+def calc_hist(img):
+    b = cv2.calcHist(img, [0], None, [24], [0,256])
+    g = cv2.calcHist(img, [1], None, [24], [0,256])
+    r = cv2.calcHist(img, [2], None, [24], [0,256])
+    return np.array([b,g,r])
+
+prev_hist = calc_hist(prev_frame)
 
 # just for display purposes
 delta_bgr = prev_frame
@@ -180,6 +194,8 @@ start_time = prev_time
 frame_count = 0
 fps = 0
  
+
+
 while(True):
     frame_count += 1
 
@@ -196,11 +212,22 @@ while(True):
         top_left = Config.rect_points[0]
         bottom_right = Config.rect_points[1]
         curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-        curr_sum = np.sum(curr_frame, dtype=np.int64)
     
-        diff = abs(curr_sum - prev_sum)
-        motion_percent = round((diff/prev_sum) * 100)
-        cv2.imshow("p", np.hstack([curr_frame, prev_frame]))
+        curr_hist = calc_hist(curr_frame)
+
+        diff = cv2.absdiff(curr_hist, prev_hist)
+        diff_sum = np.sum(diff)
+        prev_sum = np.sum(prev_hist)
+
+        motion_percent = round((diff_sum/prev_sum) * 100)
+
+        #if sum_of_diff_small > 1:
+        #    breakpoint()
+   
+     
+        print(motion_percent)
+ 
+        cv2.imshow("diff", np.hstack([curr_frame, prev_frame]))
      
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
@@ -214,8 +241,7 @@ while(True):
                         Config.new_size_for_video)
 
         prev_frame = curr_frame
-        prev_sum = curr_sum
-        
+        prev_hist = curr_hist
         prev_time = now
 
     # text on image

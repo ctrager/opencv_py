@@ -74,6 +74,7 @@ def current_milliseconds():
     return round(time.time() * 1000)
 
 prev_time = current_milliseconds()
+prev_hist = cv2.calcHist(prev_frame, [2], None, [24], [0,256])
 
 while(True):
 
@@ -81,31 +82,33 @@ while(True):
 
     frames = prep_frame_for_video(frame)
 
-    if now - prev_time > 500:
-        # print(now)
-        
+    if now - prev_time > 400:
+      
         curr_frame = frames[1]
 
-        #cv2.imshow("diff", np.hstack((curr_frame, prev_frame)))
-  
-        curr_sum = np.sum(curr_frame, dtype=np.int64)
-        prev_sum = np.sum(prev_frame, dtype=np.int64)
+        curr_hist = cv2.calcHist(curr_frame, [2], None, [24], [0,256])
 
-        diff = abs(curr_sum - prev_sum)
-        pct = round((diff/prev_sum) * 100)
+        diff = cv2.absdiff(curr_hist, prev_hist)
+        sum = np.sum(diff)
 
-        print(diff, curr_sum, prev_sum, pct)
-        prev_time = now
-        
+        print(sum)
+        #curr_histg = cv2.calcHist(curr_frame, [1], None, [256], [0,256])
+        #curr_histr = cv2.calcHist(curr_frame, [2], None, [256], [0,256])
+        # print(curr_hist)
+
+
         prev_frame = curr_frame
-
+        prev_hist = curr_hist
+        prev_time = now
+    
+    
     cv2.imshow("window1", np.hstack(frames))
 
     # detect window closing
     key = cv2.waitKey(1) 
 
     if key == 27: # escape key
-        break
+        break   
 
     if cv2.getWindowProperty("window1",cv2.WND_PROP_AUTOSIZE)  < 1: # closed with X       
         break   

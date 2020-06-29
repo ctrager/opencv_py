@@ -288,7 +288,11 @@ while(True):
         break   
 
     # get next frame
-    ret, frame = video_capture.read()
+    ret = False
+    while(ret == False):
+        ret, frame = video_capture.read()
+        if (ret == False):
+            sleep(3)
 
 # clean up
 video_capture.release()

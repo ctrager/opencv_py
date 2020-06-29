@@ -219,7 +219,7 @@ while(True):
         diff_sum = np.sum(diff)
         prev_sum = np.sum(prev_hist)
 
-        motion_percent = round((diff_sum/prev_sum) * 100)
+        motion_percent = int(round((diff_sum/prev_sum) * 100))
 
         #if sum_of_diff_small > 1:
         #    breakpoint()

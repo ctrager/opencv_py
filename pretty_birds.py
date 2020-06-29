@@ -296,7 +296,7 @@ while(True):
     while(ret == False):
         ret, frame = video_capture.read()
         if (ret == False):
-            sleep(.5)
+            time.sleep(.5)
 
 # clean up
 video_capture.release()

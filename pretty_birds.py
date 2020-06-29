@@ -194,7 +194,7 @@ start_time = prev_time
 frame_count = 0
 fps = 0
  
-
+queue = []
 
 while(True):
     frame_count += 1
@@ -221,12 +221,6 @@ while(True):
 
         motion_percent = int(round((diff_sum/prev_sum) * 100))
 
-        #if sum_of_diff_small > 1:
-        #    breakpoint()
-   
-     
-        print(motion_percent)
- 
         cv2.imshow("diff", np.hstack([curr_frame, prev_frame]))
      
         if state == STATE_NONE:
@@ -239,6 +233,10 @@ while(True):
                     print(filename)
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                         Config.new_size_for_video)
+                    # print a couple seconds ago
+                    for item in queue:
+                        past_frame = prep_frame_for_video(item[0])
+                        video_file.write(past_frame)
 
         prev_frame = curr_frame
         prev_hist = curr_hist
@@ -278,6 +276,12 @@ while(True):
         if now - state_start_time > (Config.cooldown_in_seconds * 1000):
             change_state(STATE_NONE)
 
+    if state == STATE_NONE or state == STATE_COOLDOWN:
+        if len(queue) >= 60:
+            queue.pop(0)
+        if len(queue) < 60:
+            queue.append([frame,motion_percent])
+
     # detect window closing
     key = cv2.waitKey(1) 
 
@@ -286,13 +290,13 @@ while(True):
 
     if cv2.getWindowProperty("window1",cv2.WND_PROP_AUTOSIZE)  < 1: # closed with X       
         break   
-
+  
     # get next frame
     ret = False
     while(ret == False):
         ret, frame = video_capture.read()
         if (ret == False):
-            sleep(3)
+            sleep(.5)
 
 # clean up
 video_capture.release()

@@ -304,9 +304,16 @@ while(True):
         try:
             ret, frame = video_capture.read()
             if (ret == False):
+                print(time.strftime("%Y-%m-%d %H:%M:%S"))
                 print("reading frame returned false")
-                time.sleep(.1)
+                time.sleep(1)
+                try:
+                    video_capture.release()
+                except:
+                    print("releasing video threw exception")
+                video_capture = start_video()
         except:
+            print(time.strftime("%Y-%m-%d %H:%M:%S"))
             print("reading frame threw exception")
             time.sleep(1)
   

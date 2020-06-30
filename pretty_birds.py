@@ -103,6 +103,11 @@ def change_state(new_state):
     state_start_time = current_milliseconds()
     print(now_string, "state", state, new_state)
 
+def start_video():
+    video_capture = cv2.VideoCapture(
+        "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
+    return video_capture
+
 def process_frame(frame):
     
     # resize
@@ -165,8 +170,7 @@ cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
 cv2.setTrackbarPos("interval", "window1", round(Config.interval_in_milliseconds / 10))
 
 #video_capture = cv2.VideoCapture(0)
-video_capture = cv2.VideoCapture(
-    "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
+video_capture = start_video()
 
 # get first frame
 ret, frame = video_capture.read()
@@ -294,10 +298,15 @@ while(True):
     # get next frame
     ret = False
     while(ret == False):
-        ret, frame = video_capture.read()
-        if (ret == False):
-            time.sleep(.5)
-
+        try:
+            ret, frame = video_capture.read()
+            if (ret == False):
+                print("reading frame returned false")
+                time.sleep(.1)
+        except:
+            print("reading frame threw exception")
+            time.sleep(1)
+  
 # clean up
 video_capture.release()
 cv2.destroyAllWindows()

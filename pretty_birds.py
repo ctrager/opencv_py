@@ -258,7 +258,7 @@ while(True):
  
     padded_frame = cv2.copyMakeBorder(prev_frame, 
         0, len(orig) - len(prev_frame), 0, len(orig[0]) - len(prev_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
-    print(len(padded_frame), len(prev_frame))
+    
     display_image = np.hstack([
         orig, 
         altered_frames[2],

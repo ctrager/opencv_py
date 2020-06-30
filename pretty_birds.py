@@ -206,6 +206,7 @@ while(True):
     now = current_milliseconds()
 
     altered_frames = process_frame(frame)
+    orig = altered_frames[ORIGINAL_FRAME]
 
     if now - prev_time > Config.interval_in_milliseconds:
         elapsed_seconds = (now - start_time)/1000
@@ -224,8 +225,6 @@ while(True):
         prev_sum = np.sum(prev_hist)
 
         motion_percent = int(round((diff_sum/prev_sum) * 100))
-
-        cv2.imshow("diff", np.hstack([curr_frame, prev_frame]))
      
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
@@ -248,8 +247,8 @@ while(True):
 
     # text on image
     text_on_image = str(motion_percent) + "," + state + "," + str(fps)
-    cv2.putText(altered_frames[ORIGINAL_FRAME], text_on_image,
-        (10, len(altered_frames[ORIGINAL_FRAME]) - 20  ), font, 
+    cv2.putText(orig, text_on_image,
+        (10, len(orig) - 20  ), font, 
         .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
@@ -257,9 +256,13 @@ while(True):
     bottom_right = Config.rect_points[1]
     cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
  
+    padded_frame = cv2.copyMakeBorder(prev_frame, 
+        0, len(orig) - len(prev_frame), 0, len(orig[0]) - len(prev_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
+    print(len(padded_frame), len(prev_frame))
     display_image = np.hstack([
-        altered_frames[ORIGINAL_FRAME], 
-        altered_frames[2]
+        orig, 
+        altered_frames[2],
+        padded_frame
     ])
 
     cv2.imshow('window1',display_image)

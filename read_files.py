@@ -5,19 +5,26 @@ import time
 import numpy as np
 
 class Config:
-    width = 0
-    height = 0
-    nth_frame = 10
+    width = 1920
+    height = 1080
+    new_size_for_analysis = (640,360)
+    nth_frame = 5
     motion_percent_threshold = 30    
     back_n_frames = 20
     frames_to_write = 120
     framerate = 24
+    rect_points = ((400,10), (630,300))
 
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX    
 
 def process_frame(frame):
-    return cv2.resize(frame, (300,200))
+    small =  cv2.resize(frame, Config.new_size_for_analysis)
+    top_left = Config.rect_points[0]
+    bottom_right = Config.rect_points[1]
+    cv2.rectangle(small, top_left, bottom_right, (255,255,0), 1)
+    return small
+ 
 
 def diff(curr, prev):
     diff = cv2.absdiff(curr, prev)
@@ -37,9 +44,6 @@ filenames.sort()
 # init prev_frame
 video_capture = cv2.VideoCapture(filenames[0])
 ret, frame = video_capture.read()
-Config.width = len(frame[0])
-Config.height = len(frame)
-print("width, height", Config.width, Config.height)
 frame = process_frame(frame)
 prev_frame = frame
 video_capture.release()
@@ -54,10 +58,10 @@ for filename in filenames:
     
     while ret == True:
         cnt += 1
-        #time.sleep(.03)
 
         if cnt % Config.nth_frame == 0:
             frame = process_frame(frame)
+            cv2.imshow("w", frame)
 
             motion_percent = diff(frame, prev_frame)
 
@@ -72,6 +76,8 @@ for filename in filenames:
 
             prev_frame = frame
 
+        cv2.waitKey(1)
+        
         ret, frame = video_capture.read()
 
     video_capture.release()
@@ -84,6 +90,7 @@ def sort_frame_info(element):
 frames_with_motion.sort(reverse=True, key=sort_frame_info)
 
 for fi in frames_with_motion[:3]:
+    break  ####  SKIP WRITING
     start_frame = fi["frame_number"] - Config.back_n_frames
     if start_frame < 1:
         start_frame = 1
@@ -98,7 +105,7 @@ for fi in frames_with_motion[:3]:
 
     print(filename)
     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
-        (1920,1080))    
+        (Config.width, Config.height))    
 
     video_capture = cv2.VideoCapture(fi["filename"])
     cnt = 0
@@ -107,7 +114,6 @@ for fi in frames_with_motion[:3]:
     while ret == True:
         cnt += 1
         if cnt >= start_frame and frames_written < Config.frames_to_write:
-            print("writing")
             video_file.write(frame)
             frames_written += 1
             if frames_written == Config.frames_to_write:
@@ -115,5 +121,4 @@ for fi in frames_with_motion[:3]:
         ret, frame = video_capture.read()
     video_file.release()
  
-
 cv2.destroyAllWindows()

@@ -8,12 +8,14 @@ class Config:
     width = 1920
     height = 1080
     new_size_for_analysis = (640,360)
-    nth_frame = 5
-    motion_percent_threshold = 30    
-    back_n_frames = 20
-    frames_to_write = 120
-    framerate = 24
+    nth_frame = 10
+    motion_percent_threshold = 20  
+    back_n_frames = 30
+    frames_to_write = 210
+    framerate = 15
     rect_points = ((400,10), (630,300))
+    root_dir = "//home/corey/Downloads/record2/"
+
 
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX    
@@ -34,10 +36,9 @@ def diff(curr, prev):
     return pct
 
 # get filenames
-root_dir = "//home/corey/Downloads/record2/"
 
 filenames = []
-for filename in  glob.iglob(root_dir + '**/*.mp4', recursive=True):
+for filename in  glob.iglob(Config.root_dir + '**/*.mp4', recursive=True):
     filenames.append(filename)
 filenames.sort()
 
@@ -61,7 +62,6 @@ for filename in filenames:
 
         if cnt % Config.nth_frame == 0:
             frame = process_frame(frame)
-            cv2.imshow("w", frame)
 
             motion_percent = diff(frame, prev_frame)
 
@@ -72,53 +72,101 @@ for filename in filenames:
                     "frame_number": cnt,
                     "motion_percent": motion_percent
                     }
-                frames_with_motion.append(frame_info)    
+                frames_with_motion.append(frame_info) 
+                print(filename, cnt, motion_percent)
+
+                #copy = np.copy(frame)
+                #text_on_image = str(motion_percent)
+                #cv2.putText(copy, text_on_image, 
+                #    (10, len(copy) - 20  ), font, .8, (255,255,0), 2, cv2.LINE_AA)   
+                #cv2.imshow("a", copy)
+                #cv2.waitKey(1)
 
             prev_frame = frame
-
-        cv2.waitKey(1)
+            
+        #cv2.waitKey(1)
         
         ret, frame = video_capture.read()
 
     video_capture.release()
 
-print("done with all files")
+print("done with analyzing files")
 
 def sort_frame_info(element):
     return element["motion_percent"]
 
 frames_with_motion.sort(reverse=True, key=sort_frame_info)
 
-for fi in frames_with_motion[:3]:
-    break  ####  SKIP WRITING
-    start_frame = fi["frame_number"] - Config.back_n_frames
-    if start_frame < 1:
-        start_frame = 1
+output_file = None
+output_filename = ""
+
+def write_clip(fi, frames_written):
+    global output_file
+    global output_filename
+
+    print("write_clip", fi["filename"], fi["frame_number"], fi["motion_percent"], frames_written)
+
     filename_parts = fi["filename"].split("/")
     last_part = len(filename_parts) - 1
-    filename =  "./videos/hum_" \
-        + filename_parts[last_part - 2] \
-        + filename_parts[last_part - 1] \
-        + filename_parts[last_part] \
-        + str(round(time.time() * 1000)) \
-        + ".mp4"
+    minute = int(filename_parts[last_part][:2])
+    hour = int(filename_parts[last_part - 1])
+    date = filename_parts[last_part - 2]
 
-    print(filename)
-    video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
-        (Config.width, Config.height))    
+    if frames_written > 0:
+        minute += 1
+        if minute == 60:
+            minute = 0
+            hour += 1
+    
+    input_filename = filename_parts[0]
+    for part in filename_parts[1:len(filename_parts)-2]:
+        input_filename += "/" + part
+    
+    input_filename += "/" + str(hour).zfill(2)
+    input_filename += "/" + str(minute).zfill(2)
+    input_filename += ".mp4"
+ 
+    start_frame = 1
+    if frames_written == 0:
+        output_filename = "./videos/hum_" \
+            + date + "_" + str(hour).zfill(2) + str(minute).zfill(2) \
+            + "_" + str(fi["frame_number"]) + "_" + str(fi["motion_percent"]) + ".mp4"
+        
+        # open the output file
+        output_file = cv2.VideoWriter(output_filename, fourcc, Config.framerate, 
+            (Config.width, Config.height))    
+    
+        start_frame = fi["frame_number"] - Config.back_n_frames
+        if start_frame < 1:
+            start_frame = 1
+    
+    input_file = cv2.VideoCapture(input_filename)
 
-    video_capture = cv2.VideoCapture(fi["filename"])
     cnt = 0
-    frames_written = 0
-    ret, frame = video_capture.read()
+    ret, input_frame = input_file.read()
+
     while ret == True:
         cnt += 1
+        #cv2.imshow("b", cv2.resize(input_frame,(300,200)))
+        #cv2.waitKey(1)
         if cnt >= start_frame and frames_written < Config.frames_to_write:
-            video_file.write(frame)
+            output_file.write(input_frame)
             frames_written += 1
             if frames_written == Config.frames_to_write:
                 break
-        ret, frame = video_capture.read()
-    video_file.release()
+        ret, input_frame = input_file.read()
+
+    input_file.release()    
+    
+    if frames_written == Config.frames_to_write:
+    #if True:
+        print("closing", output_filename, start_frame, frames_written) 
+        output_file.release()
+    else:    
+        print("calling write_clip", output_filename, start_frame, frames_written)
+        write_clip(fi, frames_written)
+
+for fi in frames_with_motion[:12]:
+    write_clip(fi, 0)
  
 cv2.destroyAllWindows()

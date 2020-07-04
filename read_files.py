@@ -14,7 +14,7 @@ class Config:
     frames_to_write = 210
     framerate = 15
     rect_points = ((400,10), (630,300))
-    root_dir = "//home/corey/Downloads/record2/"
+    root_dir = "//home/corey/Downloads/hum/"
 
 
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
@@ -55,6 +55,7 @@ for filename in filenames:
     print(filename)
     video_capture = cv2.VideoCapture(filename)
     cnt = 0
+    highest_score = 0
     ret, frame = video_capture.read()
     
     while ret == True:
@@ -64,7 +65,8 @@ for filename in filenames:
             frame = process_frame(frame)
 
             motion_percent = diff(frame, prev_frame)
-
+            if motion_percent > highest_score:
+                highest_score = motion_percent
             if motion_percent > Config.motion_percent_threshold:
                 frame_info = {
                     "frame": frame,
@@ -88,6 +90,7 @@ for filename in filenames:
         
         ret, frame = video_capture.read()
 
+    print("highest score", highest_score)
     video_capture.release()
 
 print("done with analyzing files")

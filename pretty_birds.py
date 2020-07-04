@@ -52,7 +52,7 @@ state_start_time = 0
 
 prev_frame = []
 
-fourcc = cv2.VideoWriter_fourcc(*'H264')
+fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
 motion_percent = 0
 

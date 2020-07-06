@@ -2,25 +2,23 @@ import numpy as np
 import cv2
 import time
 
-#todo
-# cooldown
-# better configurability
-# detection regions
-# experiments with 
-# https://stackoverflow.com/questions/189943/how-can-i-quantify-difference-between-two-images
-# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_video/py_lucas_kanade/py_lucas_kanade.html
-
 # color calculator
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     gauss_blur = 3
     screen_scale_factor = .2
     # 0-255
-    lightness = 50
-    saturation = 50
-    yellow_green = 10
-    blue_green = 160
-    interval_in_milliseconds = 2000
+    red_lightness = 50
+    red_saturation = 50
+    yellow_lightness = 50
+    yellow_saturation = 50
+    blue_lightness = 50
+    blue_saturation = 50
+    red1 = (170,180)
+    red2 = (0, 10)
+    yellow = (25,30)
+    blue = (110, 130)
+    interval_in_milliseconds = 400
     motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
@@ -71,27 +69,6 @@ def handle_gauss_blur(arg1):
     if Config.gauss_blur % 2 == 0:
         Config.gauss_blur = Config.gauss_blur + 1
 
-def handle_lightness(arg1):
-    Config.lightness = arg1
-
-def handle_saturation(arg1):
-    Config.saturation = arg1
-
-def handle_yellow_green(arg1):
-    Config.yellow_green = arg1
-
-def handle_blue_green(arg1):
-    Config.blue_green = arg1
-
-def handle_motion_threshold_percent(arg1):
-    Config.motion_threshold_percent = arg1
-
-def handle_create_video(arg1):
-    Config.create_video = arg1
-
-def handle_interval(arg1):
-    Config.interval_in_milliseconds = arg1 * 10
-
 def current_milliseconds():
     return round(time.time() * 1000)
 
@@ -122,52 +99,88 @@ def process_frame(frame):
     # Convert BGR to HSV
     hsv = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
 
-    # red to yellow, but not into green
-    in_range1 = cv2.inRange(hsv, 
-        (0, Config.saturation, Config.lightness), 
-        (Config.yellow_green, 255, 255))
+    # red crosses 0, so we need to ranges
+    in_range_red1 = cv2.inRange(hsv, 
+        (Config.red1[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red1[1], 255, 255))
+
+    in_range_red2 = cv2.inRange(hsv, 
+        (Config.red2[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red2[1], 255, 255))
+
+    in_range_yellow = cv2.inRange(hsv, 
+        (Config.yellow[0], Config.yellow_saturation, Config.yellow_lightness), 
+        (Config.yellow[1], 255, 255))
+
+    in_range_blue = cv2.inRange(hsv, 
+        (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
+        (Config.blue[1], 255, 255))
+
+    in_range_all_gray = cv2.bitwise_or(in_range_red1, in_range_red2)
+    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_yellow)
+    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_blue)
+
+    gray_with_holes = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
+    gray_with_holes = cv2.cvtColor(gray_with_holes, cv2.COLOR_GRAY2BGR)
+
+    colors_without_gray = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
     
-    # red to maybe turqoise, but not into green
-    in_range2 = cv2.inRange(hsv, 
-        (Config.blue_green, Config.saturation, Config.lightness), 
-        (180, 255, 255))
-
-    in_range_all_gray = cv2.bitwise_or(in_range1, in_range2)
-
-    gray_without_red = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
-    gray_without_red_bgr = cv2.cvtColor(gray_without_red, cv2.COLOR_GRAY2BGR)
-
-    just_red = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
-    
-    both = cv2.bitwise_or(gray_without_red_bgr, just_red)
+    # both is the image with gray scale except for the colors we allow to show
+    both = cv2.bitwise_or(gray_with_holes, colors_without_gray)
    
     # return an array of frames
     # "original" is index 0
     # the one for diffing is index 1
     # others appended
-    # return [small_frame, just_red, both]
+    # return [small_frame, colors_without_gray, both]
    
-    return [small_frame, just_red, both]
-
+    return [small_frame, colors_without_gray, both]
 
 # build windows
 cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
 
+def handle_create_video(arg1):
+    Config.create_video = arg1
 cv2.createTrackbar("create_video", "window1", 0, 1, handle_create_video)
-cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
-cv2.createTrackbar("lightness", "window1", 0, 255, handle_lightness)
-cv2.createTrackbar("saturation", "window1", 0, 255, handle_saturation)
-cv2.createTrackbar("yellow_green", "window1", 0, 255, handle_yellow_green)
-cv2.createTrackbar("blue_green", "window1", 0, 255, handle_blue_green)
-cv2.createTrackbar("interval", "window1", 0, 400, handle_interval)
-
 cv2.setTrackbarPos("create_video", "window1", Config.create_video)
+
+def handle_motion_threshold_percent(arg1):
+    Config.motion_threshold_percent = arg1
+cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
 cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
-cv2.setTrackbarPos("lightness", "window1", Config.lightness)
-cv2.setTrackbarPos("saturation", "window1", Config.saturation)
-cv2.setTrackbarPos("yellow_green", "window1", Config.yellow_green)
-cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
-cv2.setTrackbarPos("interval", "window1", round(Config.interval_in_milliseconds / 10))
+
+# red
+def handle_red_lightness(arg1):
+    Config.red_lightness = arg1
+cv2.createTrackbar("red_lightness", "window1", 0, 255, handle_red_lightness)
+cv2.setTrackbarPos("red_lightness", "window1", Config.red_lightness)
+
+def handle_red_saturation(arg1):
+    Config.red_saturation = arg1
+cv2.createTrackbar("red_saturation", "window1", 0, 255, handle_red_saturation)
+cv2.setTrackbarPos("red_saturation", "window1", Config.red_saturation)
+
+# blue
+def handle_blue_lightness(arg1):
+    Config.blue_lightness = arg1
+cv2.createTrackbar("blue_lightness", "window1", 0, 255, handle_blue_lightness)
+cv2.setTrackbarPos("blue_lightness", "window1", Config.blue_lightness)
+
+def handle_blue_saturation(arg1):
+    Config.blue_saturation = arg1
+cv2.createTrackbar("blue_saturation", "window1", 0, 255, handle_blue_saturation)
+cv2.setTrackbarPos("blue_saturation", "window1", Config.blue_saturation)
+
+# yellow
+def handle_yellow_lightness(arg1):
+    Config.yellow_lightness = arg1
+cv2.createTrackbar("yellow_lightness", "window1", 0, 255, handle_yellow_lightness)
+cv2.setTrackbarPos("yellow_lightness", "window1", Config.yellow_lightness)
+
+def handle_yellow_saturation(arg1):
+    Config.yellow_saturation = arg1
+cv2.createTrackbar("yellow_saturation", "window1", 0, 255, handle_yellow_saturation)
+cv2.setTrackbarPos("yellow_saturation", "window1", Config.yellow_saturation)
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = start_video()

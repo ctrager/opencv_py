@@ -29,10 +29,9 @@ def process_frame(frame):
     cv2.rectangle(small, top_left, bottom_right, (255,255,0), 1)
     cropped = small[20:190, 320:420]
     #rect_points = ((320,20), (420,190))
-
+ 
     return cropped
  
-
 def diff(curr, prev):
     diff = cv2.absdiff(curr, prev)
     diff_sum = np.sum(diff)

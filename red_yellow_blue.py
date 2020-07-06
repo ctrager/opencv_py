@@ -135,11 +135,10 @@ def process_frame(frame):
     #colors_without_gray = cv2.GaussianBlur(colors_without_gray,
     #    (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
+    # colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
 
     #kernel = np.ones((3,3),np.uint8)
     #colors_without_gray = cv2.dilate(colors_without_gray, kernel)
-
 
     return [small_frame, colors_without_gray, both]
 

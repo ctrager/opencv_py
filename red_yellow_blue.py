@@ -35,6 +35,7 @@ class Config:
     new_size_for_video = (620,640) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
     rect_points = ((60,90),(260,290))
+    kernel = np.ones((3,3),np.uint8)
 
 BLUE = 0
 GREEN = 1
@@ -131,11 +132,14 @@ def process_frame(frame):
     # return [small_frame, colors_without_gray, both]
    
     # blur
-    Config.gauss_blur = 3
-    colors_without_gray = cv2.GaussianBlur(colors_without_gray,
-        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+    #colors_without_gray = cv2.GaussianBlur(colors_without_gray,
+    #    (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    #colors_without_gray = cv2.erode(colors_without_gray)
+    colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
+
+    #kernel = np.ones((3,3),np.uint8)
+    #colors_without_gray = cv2.dilate(colors_without_gray, kernel)
+
 
     return [small_frame, colors_without_gray, both]
 

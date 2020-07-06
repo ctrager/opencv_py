@@ -17,7 +17,7 @@ class Config:
     red1 = (170,180)
     red2 = (0, 10)
     yellow = (25,30)
-    blue = (110, 130)
+    blue = (105, 135)
     interval_in_milliseconds = 400
     motion_threshold_percent = 20
     recording_length_in_seconds = 8

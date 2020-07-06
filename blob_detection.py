@@ -19,29 +19,55 @@ class Config:
     new_size_for_analysis = (310,300) # 1/3 size
     new_size_for_video = (620,600) # 2/2 size    
 
-def handle_canny1(val):
-    Config.canny1 = val
-def handle_canny2(val):
-    Config.canny2 = val
 def handle_gauss_blur(arg1):
     Config.gauss_blur = arg1
     if Config.gauss_blur % 2 == 0:
-        Config.gauss_blur = Config.gauss_blur + 1    
-cv2.createTrackbar("canny1", "window1", 0, 300, handle_canny1)
-cv2.createTrackbar("canny2", "window1", 0, 300, handle_canny2)
-cv2.setTrackbarPos("canny1", "window1", Config.canny1)
-cv2.setTrackbarPos("canny2", "window1", Config.canny2)
+        Config.gauss_blur = Config.gauss_blur + 1  
 cv2.createTrackbar("gauss_blur", "window1", 0, 255, handle_gauss_blur)
 cv2.setTrackbarPos("gauss_blur", "window1", Config.gauss_blur)
 
+params = cv2.SimpleBlobDetector_Params()
+
+# Filter by Area.
+params.filterByArea = True
+params.minArea = 3000
+params.maxArea = 20000
+
+# Filter by Circularity
+params.filterByCircularity = False
+params.minCircularity = 0.1
+
+# Filter by Convexity
+params.filterByConvexity = False
+params.minConvexity = 0.87
+
+# Filter by Inertia
+params.filterByInertia = False
+params.minInertiaRatio = 0.01
+
+#params.minDistBetweenBlobs = 50.0f;
+params.filterByColor = False;
+
+# params.filterByArea = True;
+# params.minArea = 1;
+# params.maxArea = 1000;
+# params.filterByColor = True;
+# params.blobColor = 255;
+
+
+detector = cv2.SimpleBlobDetector_create(params)
 
 def prep_frame_for_video(img):
     #img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
     #img = cv2.resize(img, Config.new_size_for_video)
-    img = cv2.GaussianBlur(img, (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
-    img = cv2.Canny(img,Config.canny1,Config.canny2)
+    keypoints = detector.detect(img)
+    img = cv2.drawKeypoints(
+        img, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
+    #img = cv2.GaussianBlur(img, (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+    #img = cv2.Canny(img,Config.canny1,Config.canny2)
 
+ 
     return img
 
 

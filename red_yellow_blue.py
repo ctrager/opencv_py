@@ -5,7 +5,7 @@ import time
 # color calculator
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
-    gauss_blur = 3
+    gauss_blur = 9
     screen_scale_factor = .2
     # 0-255
     red_lightness = 50
@@ -16,7 +16,7 @@ class Config:
     blue_saturation = 50
     red1 = (170,180)
     red2 = (0, 10)
-    yellow = (25,30)
+    yellow = (25,32)
     blue = (105, 135)
     interval_in_milliseconds = 400
     motion_threshold_percent = 20
@@ -90,14 +90,10 @@ def process_frame(frame):
     # resize
     small_frame = prep_frame_for_analysis(frame)
 
-    # blur
-    blurred_frame = cv2.GaussianBlur(small_frame,
-        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
-
     gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
 
     # Convert BGR to HSV
-    hsv = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(small_frame, cv2.COLOR_BGR2HSV)
 
     # red crosses 0, so we need to ranges
     in_range_red1 = cv2.inRange(hsv, 
@@ -134,6 +130,13 @@ def process_frame(frame):
     # others appended
     # return [small_frame, colors_without_gray, both]
    
+    # blur
+    Config.gauss_blur = 3
+    colors_without_gray = cv2.GaussianBlur(colors_without_gray,
+        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+
+    #colors_without_gray = cv2.erode(colors_without_gray)
+
     return [small_frame, colors_without_gray, both]
 
 # build windows

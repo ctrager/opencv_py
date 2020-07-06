@@ -7,13 +7,15 @@ import numpy as np
 class Config:
     width = 1920
     height = 1080
+    half_width = 960
+    half_height = 540
     new_size_for_analysis = (640,360)
     nth_frame = 10
-    motion_percent_threshold = 20  
+    motion_percent_threshold = 26 
     back_n_frames = 30
-    frames_to_write = 210
+    frames_to_write = 180
     framerate = 15
-    rect_points = ((400,10), (630,300))
+    rect_points = ((320,20), (420,190))
     root_dir = "//home/corey/Downloads/hum/"
 
 
@@ -25,7 +27,10 @@ def process_frame(frame):
     top_left = Config.rect_points[0]
     bottom_right = Config.rect_points[1]
     cv2.rectangle(small, top_left, bottom_right, (255,255,0), 1)
-    return small
+    cropped = small[20:190, 320:420]
+    #rect_points = ((320,20), (420,190))
+
+    return cropped
  
 
 def diff(curr, prev):
@@ -62,14 +67,17 @@ for filename in filenames:
         cnt += 1
 
         if cnt % Config.nth_frame == 0:
-            frame = process_frame(frame)
+            processed_frame = process_frame(frame)
 
-            motion_percent = diff(frame, prev_frame)
+            cv2.imshow("a", processed_frame)
+            cv2.waitKey(1)
+
+            motion_percent = diff(processed_frame, prev_frame)
+
             if motion_percent > highest_score:
                 highest_score = motion_percent
             if motion_percent > Config.motion_percent_threshold:
                 frame_info = {
-                    "frame": frame,
                     "filename": filename,
                     "frame_number": cnt,
                     "motion_percent": motion_percent
@@ -77,17 +85,8 @@ for filename in filenames:
                 frames_with_motion.append(frame_info) 
                 print(filename, cnt, motion_percent)
 
-                #copy = np.copy(frame)
-                #text_on_image = str(motion_percent)
-                #cv2.putText(copy, text_on_image, 
-                #    (10, len(copy) - 20  ), font, .8, (255,255,0), 2, cv2.LINE_AA)   
-                #cv2.imshow("a", copy)
-                #cv2.waitKey(1)
-
-            prev_frame = frame
-            
-        #cv2.waitKey(1)
-        
+            prev_frame = processed_frame
+      
         ret, frame = video_capture.read()
 
     print("highest score", highest_score)
@@ -137,7 +136,7 @@ def write_clip(fi, frames_written):
         
         # open the output file
         output_file = cv2.VideoWriter(output_filename, fourcc, Config.framerate, 
-            (Config.width, Config.height))    
+            (Config.half_width, Config.half_height))    
     
         start_frame = fi["frame_number"] - Config.back_n_frames
         if start_frame < 1:
@@ -153,7 +152,8 @@ def write_clip(fi, frames_written):
         #cv2.imshow("b", cv2.resize(input_frame,(300,200)))
         #cv2.waitKey(1)
         if cnt >= start_frame and frames_written < Config.frames_to_write:
-            output_file.write(input_frame)
+            half = cv2.resize(input_frame, (Config.half_width, Config.half_height))
+            output_file.write(half)
             frames_written += 1
             if frames_written == Config.frames_to_write:
                 break
@@ -169,7 +169,7 @@ def write_clip(fi, frames_written):
         print("calling write_clip", output_filename, start_frame, frames_written)
         write_clip(fi, frames_written)
 
-for fi in frames_with_motion[:12]:
+for fi in frames_with_motion[:1]:
     write_clip(fi, 0)
  
 cv2.destroyAllWindows()

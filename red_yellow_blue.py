@@ -34,7 +34,7 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
-    rect_points = ((60,90),(260,290))
+    rect_points = ((60,60),(260,290))
     kernel = np.ones((3,3),np.uint8)
 
 BLUE = 0

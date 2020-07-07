@@ -136,7 +136,7 @@ while(True):
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
                 if Config.create_video == 1:
-                    filename =  "./videos/video_" \
+                    filename =  "./videos/hum_" \
                         + time.strftime("%Y-%m-%d-%H-%M-%S") \
                         + "_pct" + str(motion_percent) + ".mp4"
                     print(filename)

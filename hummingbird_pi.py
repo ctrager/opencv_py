@@ -131,7 +131,7 @@ while(True):
         diff = cv2.absdiff(curr_frame, prev_frame)
         pct = np.sum(diff)/np.sum(prev_frame)
         motion_percent = int(round(pct * 100))
-     
+        print(np.sum(diff), np.sum(prev_frame))
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
@@ -147,9 +147,8 @@ while(True):
                         past_frame = prep_frame_for_video(item[0])
                         video_file.write(past_frame)
 
-        # prev_frame = curr_frame
-        # prev_hist = curr_hist
-        # prev_time = now
+        prev_frame = curr_frame
+        prev_time = now
 
     # text on image
     text_on_image = str(motion_percent)+ "," + state + "," + str(fps)

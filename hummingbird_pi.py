@@ -7,7 +7,7 @@ import time
 class Config:
     gauss_blur = 5
     screen_scale_factor = .2
-    queue_size = 120
+    queue_size = 72
     interval_in_milliseconds = 400
     motion_threshold_percent = 20
     recording_length_in_seconds = 12
@@ -24,7 +24,7 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (512,384) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
-    rect_points = ((60,90),(260,290))
+    rect_points = ((135,45),(280,235))
     kernel = np.ones((5,5),np.uint8)
 
 BLUE = 0
@@ -75,7 +75,14 @@ def process_frame(frame):
 
     dilated = cv2.dilate(blur_frame, Config.kernel)
 
-    return [small_frame, dilated]
+   # rectange on image    
+    top_left = Config.rect_points[0]
+    bottom_right = Config.rect_points[1]
+   # small_frame = cv2.resize(frame, (512, 384))
+   # cv2.rectangle(, top_left, bottom_right, (255,255,0), 1)
+    frame_for_diff = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+    cv2.imshow("d", frame_for_diff)
+    return [small_frame, frame_for_diff, dilated]
 
 
 # build windows
@@ -156,17 +163,13 @@ while(True):
          (10, len(orig) - 20  ), font, 
          .8, (255,255,0), 2, cv2.LINE_AA)
 
-    # # rectange on image    
-    # top_left = Config.rect_points[0]
-    # bottom_right = Config.rect_points[1]
-    # cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
- 
-    # padded_frame = cv2.copyMakeBorder(prev_frame, 
-    #     0, len(orig) - len(prev_frame), 0, len(orig[0]) - len(prev_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
-    
+    # rectange on image    
+    top_left = Config.rect_points[0]
+    bottom_right = Config.rect_points[1]
+    cv2.rectangle(orig, top_left, bottom_right, (255,255,0), 1)
+
     display_image = np.hstack([
-        orig,
-        curr_frame
+        orig
     ])
 
     cv2.imshow('window1',display_image)

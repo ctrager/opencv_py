@@ -141,7 +141,7 @@ while(True):
         sum_prev_frame = np.sum(prev_frame)
         pct = sum_diff/sum_prev_frame * 3
         motion_percent = int(round(pct * 100))
-        print(sum_diff)
+        #print(sum_diff)
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)

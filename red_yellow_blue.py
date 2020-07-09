@@ -35,7 +35,7 @@ class Config:
     new_size_for_video = (620,640) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
     rect_points = ((60,60),(260,290))
-    kernel = np.ones((3,3),np.uint8)
+    kernel = np.ones((5,5),np.uint8)
 
 BLUE = 0
 GREEN = 1
@@ -135,9 +135,7 @@ def process_frame(frame):
     #colors_without_gray = cv2.GaussianBlur(colors_without_gray,
     #    (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    # colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
-
-    #kernel = np.ones((3,3),np.uint8)
+    colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
     colors_without_gray = cv2.dilate(colors_without_gray, Config.kernel)
 
     return [small_frame, colors_without_gray, both]
@@ -199,15 +197,18 @@ bottom_right = Config.rect_points[1]
 pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 
 prev_frame = process_frame(frame)[DIFF_FRAME]
-prev_frame = prev_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-def calc_hist(img):
-    b = cv2.calcHist(img, [0], None, [24], [0,256])
-    g = cv2.calcHist(img, [1], None, [24], [0,256])
-    r = cv2.calcHist(img, [2], None, [24], [0,256])
-    return np.array([b,g,r])
+def calc_color_score(img):
 
-prev_hist = calc_hist(prev_frame)
+    b = np.sum(img[:,:,0], dtype=np.int64)
+    r = np.sum(img[:,:,2], dtype=np.int64)
+    ratio = 0
+    if b > 0:
+        ratio = r/b
+    
+    return r
+
+prev_color_score = calc_color_score(prev_frame)
 
 # just for display purposes
 delta_bgr = prev_frame
@@ -237,13 +238,15 @@ while(True):
         bottom_right = Config.rect_points[1]
         curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
     
-        curr_hist = calc_hist(curr_frame)
+        curr_color_score = calc_color_score(curr_frame)
 
-        diff = cv2.absdiff(curr_hist, prev_hist)
-        diff_sum = np.sum(diff)
-        prev_sum = np.sum(prev_hist)
-
-        motion_percent = int(round((diff_sum/prev_sum) * 100))
+        diff = abs(curr_color_score - prev_color_score)
+        if prev_color_score > 0:
+            pct = diff / prev_color_score * 100
+        else:
+            pct = 0
+ 
+        motion_percent = int(round(pct))
      
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
@@ -261,7 +264,7 @@ while(True):
                         video_file.write(past_frame)
 
         prev_frame = curr_frame
-        prev_hist = curr_hist
+        prev_color_score = curr_color_score
         prev_time = now
 
     # text on image

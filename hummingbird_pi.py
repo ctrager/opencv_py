@@ -136,8 +136,8 @@ while(True):
       
         # # how much has changed
         diff = cv2.absdiff(curr_frame, prev_frame)
-        sum_diff = np.sum(diff)
-        sum_curr_frame = np.sum(curr_frame)
+        sum_diff = np.sum(diff, dtype=np.int64)
+        sum_curr_frame = np.sum(curr_frame, dtype=np.int64)
         sum_prev_frame = np.sum(prev_frame)
         pct = sum_diff/sum_prev_frame * 3
         motion_percent = int(round(pct * 100))

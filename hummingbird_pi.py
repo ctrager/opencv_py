@@ -24,7 +24,7 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (512,384) # 2/3 size
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
-    rect_points = ((135,45),(280,235))
+    rect_points = ((130,45),(280,225))
     kernel = np.ones((5,5),np.uint8)
 
 BLUE = 0
@@ -81,7 +81,7 @@ def process_frame(frame):
    # small_frame = cv2.resize(frame, (512, 384))
    # cv2.rectangle(, top_left, bottom_right, (255,255,0), 1)
     frame_for_diff = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-    cv2.imshow("d", frame_for_diff)
+    #cv2.imshow("d", frame_for_diff)
     return [small_frame, frame_for_diff, dilated]
 
 
@@ -136,9 +136,12 @@ while(True):
       
         # # how much has changed
         diff = cv2.absdiff(curr_frame, prev_frame)
-        pct = np.sum(diff)/np.sum(prev_frame)
+        sum_diff = np.sum(diff)
+        sum_curr_frame = np.sum(curr_frame)
+        sum_prev_frame = np.sum(prev_frame)
+        pct = sum_diff/sum_prev_frame * 3
         motion_percent = int(round(pct * 100))
-        # print(np.sum(diff), np.sum(prev_frame))
+        print(sum_diff)
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)

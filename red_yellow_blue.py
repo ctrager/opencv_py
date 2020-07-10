@@ -33,13 +33,9 @@ class Config:
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
-    #rect_points = ((60,100),(134,280),(186,100),(260,280))
     rect_points = ((60,60),(260,290))
     kernel = np.ones((5,5),np.uint8)
 
-BLUE = 0
-GREEN = 1
-RED = 2
 ORIGINAL_FRAME = 0
 DIFF_FRAME = 1
 STATE_NONE = "none"
@@ -54,6 +50,14 @@ prev_frame = []
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
 motion_percent = 0
+frame_count = 0
+fps = 0
+ 
+queue = []
+
+top_left = Config.rect_points[0]
+bottom_right = Config.rect_points[1]
+pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 
 def prep_frame_for_video(frame):
     img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
@@ -64,11 +68,6 @@ def prep_frame_for_analysis(frame):
     img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
     img = cv2.resize(img, Config.new_size_for_analysis)
     return img
-
-def handle_gauss_blur(arg1):
-    Config.gauss_blur = arg1
-    if Config.gauss_blur % 2 == 0:
-        Config.gauss_blur = Config.gauss_blur + 1
 
 def current_milliseconds():
     return round(time.time() * 1000)
@@ -85,60 +84,6 @@ def start_video():
     video_capture = cv2.VideoCapture(
         "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
     return video_capture
-
-def process_frame(frame):
-    
-    # resize
-    small_frame = prep_frame_for_analysis(frame)
-
-    gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
-
-    # Convert BGR to HSV
-    hsv = cv2.cvtColor(small_frame, cv2.COLOR_BGR2HSV)
-
-    # red crosses 0, so we need to ranges
-    in_range_red1 = cv2.inRange(hsv, 
-        (Config.red1[0], Config.red_saturation, Config.red_lightness), 
-        (Config.red1[1], 255, 255))
-
-    in_range_red2 = cv2.inRange(hsv, 
-        (Config.red2[0], Config.red_saturation, Config.red_lightness), 
-        (Config.red2[1], 255, 255))
-
-    in_range_yellow = cv2.inRange(hsv, 
-        (Config.yellow[0], Config.yellow_saturation, Config.yellow_lightness), 
-        (Config.yellow[1], 255, 255))
-
-    in_range_blue = cv2.inRange(hsv, 
-        (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
-        (Config.blue[1], 255, 255))
-
-    in_range_all_gray = cv2.bitwise_or(in_range_red1, in_range_red2)
-    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_yellow)
-    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_blue)
-
-    gray_with_holes = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
-    gray_with_holes = cv2.cvtColor(gray_with_holes, cv2.COLOR_GRAY2BGR)
-
-    colors_without_gray = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
-    
-    # both is the image with gray scale except for the colors we allow to show
-    both = cv2.bitwise_or(gray_with_holes, colors_without_gray)
-   
-    # return an array of frames
-    # "original" is index 0
-    # the one for diffing is index 1
-    # others appended
-    # return [small_frame, colors_without_gray, both]
-   
-    # blur
-    #colors_without_gray = cv2.GaussianBlur(colors_without_gray,
-    #    (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
-
-    colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
-    colors_without_gray = cv2.dilate(colors_without_gray, Config.kernel)
-
-    return [small_frame, colors_without_gray, both]
 
 # build windows
 cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
@@ -186,17 +131,56 @@ def handle_yellow_saturation(arg1):
 cv2.createTrackbar("yellow_saturation", "window1", 0, 255, handle_yellow_saturation)
 cv2.setTrackbarPos("yellow_saturation", "window1", Config.yellow_saturation)
 
+def process_frame(frame):
+    
+    # resize
+    small_frame = prep_frame_for_analysis(frame)
+
+    gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
+
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(small_frame, cv2.COLOR_BGR2HSV)
+
+    # red crosses 0, so we need to ranges
+    in_range_red1 = cv2.inRange(hsv, 
+        (Config.red1[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red1[1], 255, 255))
+
+    in_range_red2 = cv2.inRange(hsv, 
+        (Config.red2[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red2[1], 255, 255))
+
+    in_range_yellow = cv2.inRange(hsv, 
+        (Config.yellow[0], Config.yellow_saturation, Config.yellow_lightness), 
+        (Config.yellow[1], 255, 255))
+
+    in_range_blue = cv2.inRange(hsv, 
+        (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
+        (Config.blue[1], 255, 255))
+
+    in_range_all_gray = cv2.bitwise_or(in_range_red1, in_range_red2)
+    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_yellow)
+    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_blue)
+
+    gray_with_holes = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
+    gray_with_holes = cv2.cvtColor(gray_with_holes, cv2.COLOR_GRAY2BGR)
+
+    colors_without_gray = cv2.bitwise_and(small_frame, small_frame, mask=in_range_all_gray)
+    
+    # both is the image with gray scale except for the colors we allow to show
+    both = cv2.bitwise_or(gray_with_holes, colors_without_gray)
+   
+    colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
+    colors_without_gray = cv2.dilate(colors_without_gray, Config.kernel)
+
+    return [small_frame, colors_without_gray, both]
+
 #video_capture = cv2.VideoCapture(0)
 video_capture = start_video()
 
 # get first frame
 ret, frame = video_capture.read()
 print(len([frame][0][0]), len(frame))
-
-top_left = Config.rect_points[0]
-bottom_right = Config.rect_points[1]
-pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
-
 prev_frame = process_frame(frame)[DIFF_FRAME]
 
 def calc_color_score(img):
@@ -216,10 +200,6 @@ delta_bgr = prev_frame
 
 prev_time = current_milliseconds()
 start_time = prev_time
-frame_count = 0
-fps = 0
- 
-queue = []
 
 while(True):
     frame_count += 1
@@ -235,8 +215,6 @@ while(True):
       
         # how much has changed
 
-        top_left = Config.rect_points[0]
-        bottom_right = Config.rect_points[1]
         curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
     
         curr_color_score = calc_color_score(curr_frame)
@@ -275,8 +253,6 @@ while(True):
         .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
-    top_left = Config.rect_points[0]
-    bottom_right = Config.rect_points[1]
     cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
  
     padded_frame = cv2.copyMakeBorder(prev_frame, 

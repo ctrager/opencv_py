@@ -7,13 +7,12 @@ import time
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     gauss_blur = 5
-    screen_scale_factor = .2
-    queue_size = 72
+    framerate = 15
+    queue_size = 45
     interval_in_milliseconds = 400
     motion_threshold_percent = 20
     recording_length_in_seconds = 12
     cooldown_in_seconds = 12
-    framerate = 15
     create_video = 0
     width = 1920
     height = 1080
@@ -21,17 +20,12 @@ class Config:
     crop_y2 = 960
     crop_x1 = 495
     crop_x2 = 1425
-    # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (960,540) 
     new_size_for_display = (640, 360)
-    #rect_points = ((60,100),(134,280),(186,100),(260,280))
     rect_points = ((95,45),(280,265))
     kernel = np.ones((5,5),np.uint8)
 
-BLUE = 0
-GREEN = 1
-RED = 2
 ORIGINAL_FRAME = 0
 DIFF_FRAME = 1
 STATE_NONE = "none"
@@ -41,11 +35,13 @@ STATE_COOLDOWN = "cooldown"
 state = STATE_NONE
 state_start_time = 0
 
-prev_frame = []
-
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
 motion_percent = 0
+frame_count = 0
+fps = 0
+ 
+queue = []
 
 def prep_frame_for_video(frame):
     img = cv2.resize(frame, Config.new_size_for_video)
@@ -65,28 +61,7 @@ def change_state(new_state):
 def start_video():
     video_capture = cv2.VideoCapture(
        "rtsp://10.0.0.15:8554/unicast")
-#        "http://127.0.0.1:8080/")
     return video_capture
-
-def process_frame(frame):
-    
-    # resize
-    small_frame = cv2.resize(frame, Config.new_size_for_display)
-
-    blur_frame  = cv2.GaussianBlur(small_frame,
-        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
-
-    eroded = cv2.erode(blur_frame, Config.kernel)
-    dilated = cv2.dilate(eroded, Config.kernel)
-
-    
-    top_left = Config.rect_points[0]
-    bottom_right = Config.rect_points[1]
-    cropped = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-    
-    cv2.imshow("d", cropped)
-    return [small_frame, cropped]
-
 
 # build windows
 cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
@@ -108,12 +83,25 @@ def handle_motion_threshold_percent(arg1):
 cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
 cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
 
-#video_capture = cv2.VideoCapture(0)
 video_capture = start_video()
 
-# get first frame
-ret = False
-frame = None
+def process_frame(frame):
+    
+    # resize
+    small_frame = cv2.resize(frame, Config.new_size_for_display)
+
+    blur_frame  = cv2.GaussianBlur(small_frame,
+        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+
+    eroded = cv2.erode(blur_frame, Config.kernel)
+    dilated = cv2.dilate(eroded, Config.kernel)
+    
+    top_left = Config.rect_points[0]
+    bottom_right = Config.rect_points[1]
+    cropped = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+    
+    cv2.imshow("d", cropped)
+    return [small_frame, cropped]
 
 ret, frame = video_capture.read()
 print(len([frame][0][0]), len(frame))
@@ -121,11 +109,6 @@ prev_frame = process_frame(frame)[DIFF_FRAME]
 
 prev_time = current_milliseconds()
 start_time = prev_time
-frame_count = 0
-fps = 0
-motion_percent = 0
- 
-queue = []
 
 while(True):
     frame_count += 1
@@ -147,7 +130,7 @@ while(True):
         sum_prev_frame = np.sum(prev_frame)
         pct = sum_diff/sum_prev_frame * 3
         motion_percent = int(round(pct * 100))
-        #print(sum_diff)
+
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)

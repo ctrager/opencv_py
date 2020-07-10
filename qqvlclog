@@ -1,0 +1,111 @@
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+glconv_vaapi_x11 error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+main error: buffer deadlock prevented
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+main error: buffer deadlock prevented
+glconv_vaapi_x11 error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+live555 error: Failed to connect with rtsp://10.0.0.15:8554/
+main error: connection failed: Connection refused
+satip error: Failed to connect to RTSP server 10.0.0.15:8554
+main error: connection failed: Connection refused
+access_realrtsp error: cannot connect to 10.0.0.15:8554
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+main error: buffer deadlock prevented
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+main error: buffer deadlock prevented
+-- logger module stopped --
+﻿-- logger module started --
+main: Running vlc with the default interface. Use 'cvlc' to use vlc without interface.
+glconv_vaapi_x11 error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+glconv_vaapi_drm error: vaInitialize: unknown libva error
+main error: buffer deadlock prevented
+main error: Timestamp conversion failed (delay 1000000, buffering 0, bound 9000000)
+main error: Could not convert timestamp 370729480202 for FFmpeg
+-- logger module stopped --

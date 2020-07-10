@@ -191,6 +191,7 @@ video_capture = start_video()
 
 # get first frame
 ret, frame = video_capture.read()
+print(len([frame][0][0]), len(frame))
 
 top_left = Config.rect_points[0]
 bottom_right = Config.rect_points[1]

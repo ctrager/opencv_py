@@ -1,3 +1,4 @@
+
 import numpy as np
 import cv2
 import time
@@ -22,9 +23,10 @@ class Config:
     crop_x2 = 1425
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
-    new_size_for_video = (512,384) # 2/3 size
+    new_size_for_video = (960,540) 
+    new_size_for_display = (640, 360)
     #rect_points = ((60,100),(134,280),(186,100),(260,280))
-    rect_points = ((130,45),(280,225))
+    rect_points = ((95,45),(280,265))
     kernel = np.ones((5,5),np.uint8)
 
 BLUE = 0
@@ -62,27 +64,28 @@ def change_state(new_state):
 
 def start_video():
     video_capture = cv2.VideoCapture(
-        "rtsp://10.0.0.15:8554/unicast")
+       "rtsp://10.0.0.15:8554/unicast")
+#        "http://127.0.0.1:8080/")
     return video_capture
 
 def process_frame(frame):
     
     # resize
-    small_frame = cv2.resize(frame, (512, 384))
+    small_frame = cv2.resize(frame, Config.new_size_for_display)
 
     blur_frame  = cv2.GaussianBlur(small_frame,
         (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
 
-    dilated = cv2.dilate(blur_frame, Config.kernel)
+    eroded = cv2.erode(blur_frame, Config.kernel)
+    dilated = cv2.dilate(eroded, Config.kernel)
 
-   # rectange on image    
+    
     top_left = Config.rect_points[0]
     bottom_right = Config.rect_points[1]
-   # small_frame = cv2.resize(frame, (512, 384))
-   # cv2.rectangle(, top_left, bottom_right, (255,255,0), 1)
-    frame_for_diff = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-    #cv2.imshow("d", frame_for_diff)
-    return [small_frame, frame_for_diff, dilated]
+    cropped = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+    
+    cv2.imshow("d", cropped)
+    return [small_frame, cropped]
 
 
 # build windows
@@ -109,8 +112,11 @@ cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshol
 video_capture = start_video()
 
 # get first frame
+ret = False
+frame = None
+
 ret, frame = video_capture.read()
-print(len([frame][0]), len(frame))
+print(len([frame][0][0]), len(frame))
 prev_frame = process_frame(frame)[DIFF_FRAME]
 
 prev_time = current_milliseconds()

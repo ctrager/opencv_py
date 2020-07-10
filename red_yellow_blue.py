@@ -184,12 +184,13 @@ print(len([frame][0][0]), len(frame))
 prev_frame = process_frame(frame)[DIFF_FRAME]
 
 def calc_color_score(img):
-
+    # is the image getting redder?
     b = np.sum(img[:,:,0], dtype=np.int64)
+    g = np.sum(img[:,:,1], dtype=np.int64)
     r = np.sum(img[:,:,2], dtype=np.int64)
     ratio = 0
-    if b > 0:
-        ratio = r/b
+    if b + g > 0:
+        ratio = r/(b + g)
     
     return ratio
 

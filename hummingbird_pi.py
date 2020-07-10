@@ -13,7 +13,7 @@ class Config:
     motion_threshold_percent = 20
     recording_length_in_seconds = 12
     cooldown_in_seconds = 12
-    framerate = 24
+    framerate = 15
     create_video = 0
     width = 1920
     height = 1080
@@ -48,7 +48,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 motion_percent = 0
 
 def prep_frame_for_video(frame):
-    img = cv2.resize(frame, (512, 384))
+    img = cv2.resize(frame, Config.new_size_for_video)
     return img
 
 def current_milliseconds():

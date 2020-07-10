@@ -191,7 +191,7 @@ def calc_color_score(img):
     if b > 0:
         ratio = r/b
     
-    return r
+    return ratio
 
 prev_color_score = calc_color_score(prev_frame)
 

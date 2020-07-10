@@ -14,8 +14,8 @@ class Config:
     yellow_saturation = 50
     blue_lightness = 50
     blue_saturation = 50
-    red1 = (170,180)
-    red2 = (0, 10)
+    red1 = (166,180)
+    red2 = (0, 14)
     yellow = (25,32)
     blue = (105, 135)
     interval_in_milliseconds = 400

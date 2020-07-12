@@ -158,8 +158,8 @@ def process_frame(frame):
         (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
         (Config.blue[1], 255, 255))
 
-    in_range_all_gray = cv2.bitwise_or(in_range_red1, in_range_red2)
-    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_yellow)
+    in_range_red = cv2.bitwise_or(in_range_red1, in_range_red2)
+    in_range_all_gray = cv2.bitwise_or(in_range_red, in_range_yellow)
     in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_blue)
 
     gray_with_holes = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
@@ -173,7 +173,7 @@ def process_frame(frame):
     colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
     colors_without_gray = cv2.dilate(colors_without_gray, Config.kernel)
 
-    return [small_frame, colors_without_gray, both]
+    return [small_frame, colors_without_gray, both, in_range_red, in_range_blue, in_range_yellow]
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = start_video()
@@ -181,33 +181,36 @@ video_capture = start_video()
 # get first frame
 ret, frame = video_capture.read()
 print(len([frame][0][0]), len(frame))
-prev_frame = process_frame(frame)[DIFF_FRAME]
+prev_frames = process_frame(frame)
+prev_frame = prev_frames[DIFF_FRAME]
 
-def calc_color_score(img):
-    # is the image getting redder?
-    b = np.sum(img[:,:,0], dtype=np.int64)
-    g = np.sum(img[:,:,1], dtype=np.int64)
-    r = np.sum(img[:,:,2], dtype=np.int64)
-    ratio = 0
-    if b + g > 0:
-        ratio = r/(b + g)
-    return ratio
+def calc_color_score(frames):
 
-prev_color_score = calc_color_score(prev_frame)
+    red = np.sum(frames[3], dtype=np.int64)
+    blue = np.sum(frames[4], dtype=np.int64)
+    yellow = np.sum(frames[5], dtype=np.int64)
+    return [red, blue, yellow]
+
+prev_scores = calc_color_score(prev_frames)
 
 # just for display purposes
-delta_bgr = prev_frame
+delta_bgr = prev_frames[DIFF_FRAME]
 
 prev_time = current_milliseconds()
 start_time = prev_time
+
+which_color = ["red", "blue", "yellow", "nocolor"]
+high_pct = 0
+high_index = 3
 
 while(True):
     frame_count += 1
 
     now = current_milliseconds()
 
-    altered_frames = process_frame(frame)
-    orig = altered_frames[ORIGINAL_FRAME]
+    curr_frames = process_frame(frame)
+    orig = curr_frames[ORIGINAL_FRAME]
+    # diff_frame  curr_frames[ORIGINAL_FRAME]
 
     if now - prev_time > Config.interval_in_milliseconds:
         elapsed_seconds = (now - start_time)/1000
@@ -215,27 +218,33 @@ while(True):
       
         # how much has changed
 
-        curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+        curr_frame = curr_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
     
-        curr_color_score = calc_color_score(curr_frame)
+        curr_scores = calc_color_score(curr_frames)
 
-        diff = abs(curr_color_score - prev_color_score)
-        if prev_color_score > 0:
-            pct = diff / prev_color_score * 100
-        else:
-            pct = 0
+        pct = 0
+        high_pct = 0
+        high_index = 3
 
-        motion_percent = int(round(pct))
-        print(motion_percent)
-
+        for i in range(0,3):
+            # we only care about INCREASES
+            diff = curr_scores[i] - prev_scores[i]
+            if diff > 0:
+                if prev_scores[i] > 0:
+                    pct = diff / prev_scores[i] * 100
+                    pct = int(round(pct))
+                    if pct > high_pct:
+                        high_pct = pct
+                        high_index = i
+ 
         if state == STATE_NONE:
-            if motion_percent > Config.motion_threshold_percent:
+            if high_pct > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
+                filename =  "./videos/video_" \
+                    + time.strftime("%Y-%m-%d-%H-%M-%S") \
+                    + which_color[high_index] + str(high_pct) + ".mp4"
+                print(filename)
                 if Config.create_video == 1:
-                    filename =  "./videos/video_" \
-                        + time.strftime("%Y-%m-%d-%H-%M-%S") \
-                        + "_pct" + str(motion_percent) + ".mp4"
-                    print(filename)
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                         Config.new_size_for_video)
                     # print a couple seconds ago
@@ -243,25 +252,26 @@ while(True):
                         past_frame = prep_frame_for_video(item[0])
                         video_file.write(past_frame)
 
-        prev_frame = curr_frame
-        prev_color_score = curr_color_score
+        prev_frames = curr_frames
+        prev_frame = prev_frames[DIFF_FRAME]
+        prev_scores = curr_scores
         prev_time = now
 
     # text on image
-    text_on_image = str(motion_percent) + "," + state + "," + str(fps)
+    text_on_image = str(high_pct) + "," + which_color[high_index] + "," + state + "," + str(fps)
     cv2.putText(orig, text_on_image,
         (10, len(orig) - 20  ), font, 
         .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
-    cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
+    cv2.rectangle(curr_frames[2], top_left, bottom_right, (255,255,0), 1)
  
     padded_frame = cv2.copyMakeBorder(prev_frame, 
         0, len(orig) - len(prev_frame), 0, len(orig[0]) - len(prev_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
     
     display_image = np.hstack([
         orig, 
-        altered_frames[2],
+        curr_frames[2],
         padded_frame
     ])
 

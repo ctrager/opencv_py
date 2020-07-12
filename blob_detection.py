@@ -18,6 +18,7 @@ class Config:
     # new size is 930 X 900
     new_size_for_analysis = (310,300) # 1/3 size
     new_size_for_video = (620,600) # 2/2 size    
+    kernel = np.ones((7,7),np.uint8)
 
 def handle_gauss_blur(arg1):
     Config.gauss_blur = arg1
@@ -60,6 +61,18 @@ detector = cv2.SimpleBlobDetector_create(params)
 def prep_frame_for_video(img):
     #img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
     #img = cv2.resize(img, Config.new_size_for_video)
+    img = cv2.erode(img, Config.kernel)
+    img = cv2.erode(img, Config.kernel)
+    img = cv2.erode(img, Config.kernel)
+    img = cv2.erode(img, Config.kernel)
+    img = cv2.erode(img, Config.kernel)
+    
+    img = cv2.dilate(img, Config.kernel)
+    img = cv2.dilate(img, Config.kernel)
+    img = cv2.dilate(img, Config.kernel)
+    img = cv2.dilate(img, Config.kernel)
+    img = cv2.dilate(img, Config.kernel)
+
     keypoints = detector.detect(img)
     img = cv2.drawKeypoints(
         img, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)

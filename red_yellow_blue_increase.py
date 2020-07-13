@@ -5,9 +5,7 @@ import time
 # color calculator
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
-    gauss_blur = 9
-    screen_scale_factor = .2
-    # 0-255
+    framerate = 24
     red_lightness = 50
     red_saturation = 50
     yellow_lightness = 50
@@ -22,7 +20,6 @@ class Config:
     motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
-    framerate = 24
     create_video = 0
     width = 1920
     height = 1080
@@ -299,9 +296,9 @@ while(True):
             change_state(STATE_NONE)
 
     if state == STATE_NONE or state == STATE_COOLDOWN:
-        if len(queue) >= 60:
+        if len(queue) >= Config.framerate * 2:
             queue.pop(0)
-        if len(queue) < 60:
+        if len(queue) < Config.framerate * 2:
             queue.append([frame,motion_percent])
 
     # detect window closing

@@ -23,7 +23,7 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (960,540) 
     new_size_for_display = (640, 360)
-    rect_points = ((95,45),(280,265))
+    rect_points = ((110,45),(300,265))
     kernel = np.ones((5,5),np.uint8)
 
 ORIGINAL_FRAME = 0

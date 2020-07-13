@@ -221,6 +221,8 @@ which_color = ["red", "yellow", "blue", "nocolor"]
 high_pct = 0
 high_index = 3
 
+pcts = [0,0,0]
+
 while(True):
     frame_count += 1
 
@@ -236,10 +238,10 @@ while(True):
       
         # how much has changed
         curr_scores = calc_color_score(curr_frames)
-
+        
         pcts = [0,0,0]
-    
-        for i in range(0,3):  # just red and yellow
+        
+        for i in range(0,2):  # just red and yellow
             # we only care about INCREASES
             diff = curr_scores[i] - prev_scores[i]
             if diff > 0:
@@ -248,8 +250,6 @@ while(True):
                     pct = int(round(pct))
                     pcts[i] = pct
         
-        #print(which_color[high_index], high_pct)
-        
         if state == STATE_NONE:
             pct = 0
             color = ""
@@ -257,10 +257,10 @@ while(True):
                 pct = pcts[0]
                 color = "red"
             if pcts[1] > Config.yellow_threshold_percent:
-                pct = pcts[0]
+                pct = pcts[1]
                 color = "yellow"
             if pcts[2] > Config.blue_threshold_percent:
-                pct = pcts[0]
+                pct = pcts[2]
                 color = "blue"
             if pct > 0:
                 change_state(STATE_RECORDING)
@@ -280,8 +280,10 @@ while(True):
         prev_scores = curr_scores
         prev_time = now
 
+    #print(pcts)
+    
     # text on image
-    text_on_image = str(high_pct) + "," + which_color[high_index] + "," + state + "," + str(fps)
+    text_on_image = str(pcts[0]) + "," + str(pcts[1]) + "," + str(pcts[2]) + "," + state + "," + str(fps)
     cv2.putText(orig, text_on_image,
         (10, len(orig) - 20  ), font, 
         .8, (255,255,0), 2, cv2.LINE_AA)

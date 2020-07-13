@@ -33,7 +33,7 @@ class Config:
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
-    rect_points = ((60,60),(260,290))
+    rect_points = ((60,25),(250,290))
     kernel = np.ones((5,5),np.uint8)
 
 STATE_NONE = "none"
@@ -194,7 +194,7 @@ def calc_color_score(frames):
     red = np.sum(in_range_red, dtype=np.int64)
     blue = np.sum(in_range_blue, dtype=np.int64)
     yellow = np.sum(in_range_yellow, dtype=np.int64)
-    return [red, blue, yellow]
+    return [red, yellow, blue]
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = start_video()
@@ -207,7 +207,7 @@ prev_scores = calc_color_score(processed_frames)
 prev_time = current_milliseconds()
 start_time = prev_time
 
-which_color = ["red", "blue", "yellow", "nocolor"]
+which_color = ["red", "yellow", "blue", "nocolor"]
 high_pct = 0
 high_index = 3
 
@@ -231,7 +231,7 @@ while(True):
         high_pct = 0
         high_index = 3
 
-        for i in range(0,3):
+        for i in range(0,2):  # just red and yellow
             # we only care about INCREASES
             diff = curr_scores[i] - prev_scores[i]
             if diff > 0:
@@ -241,7 +241,9 @@ while(True):
                     if pct > high_pct:
                         high_pct = pct
                         high_index = i
- 
+        
+        print(which_color[high_index], high_pct)
+        
         if state == STATE_NONE:
             if high_pct > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)

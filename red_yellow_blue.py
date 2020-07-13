@@ -162,6 +162,7 @@ def process_frame(frame):
 
     colors_without_gray = colors_without_gray[Config.rect_points[0][1]:Config.rect_points[1][1], Config.rect_points[0][0]:Config.rect_points[1][0]]
 
+    colors_without_gray[0:90, 140:, :] = (40,40,40)
     return [small_frame, colors_without_gray, both]
 
 
@@ -228,7 +229,7 @@ while(True):
         high_pct = 0
         high_index = 3
 
-        for i in range(0,2):  # just red and yellow
+        for i in range(0,3):  # just red and yellow
             # we only care about INCREASES
             diff = curr_scores[i] - prev_scores[i]
             if diff > 0:
@@ -239,7 +240,7 @@ while(True):
                         high_pct = pct
                         high_index = i
         
-        #print(which_color[high_index], high_pct)
+        print(which_color[high_index], high_pct)
         
         if state == STATE_NONE:
             if high_pct > Config.motion_threshold_percent:

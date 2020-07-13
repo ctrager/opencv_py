@@ -17,7 +17,9 @@ class Config:
     yellow = (25,32)
     blue = (105, 135)
     interval_in_milliseconds = 400
-    motion_threshold_percent = 20
+    red_threshold_percent = 20
+    yellow_threshold_percent = 20
+    blue_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
     create_video = 0
@@ -81,10 +83,20 @@ def handle_create_video(arg1):
 cv2.createTrackbar("create_video", "window1", 0, 1, handle_create_video)
 cv2.setTrackbarPos("create_video", "window1", Config.create_video)
 
-def handle_motion_threshold_percent(arg1):
-    Config.motion_threshold_percent = arg1
-cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
-cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
+def handle_red_threshold_percent(arg1):
+    Config.red_threshold_percent = arg1
+cv2.createTrackbar("red_threshold_percent", "window1", 0, 80, handle_red_threshold_percent)
+cv2.setTrackbarPos("red_threshold_percent", "window1", Config.red_threshold_percent)
+
+def handle_yellow_threshold_percent(arg1):
+    Config.yellow_threshold_percent = arg1
+cv2.createTrackbar("yellow_threshold_percent", "window1", 0, 80, handle_yellow_threshold_percent)
+cv2.setTrackbarPos("yellow_threshold_percent", "window1", Config.yellow_threshold_percent)
+
+def handle_blue_threshold_percent(arg1):
+    Config.blue_threshold_percent = arg1
+cv2.createTrackbar("blue_threshold_percent", "window1", 0, 80, handle_blue_threshold_percent)
+cv2.setTrackbarPos("blue_threshold_percent", "window1", Config.blue_threshold_percent)
 
 # red
 def handle_red_lightness(arg1):
@@ -209,6 +221,8 @@ which_color = ["red", "yellow", "blue", "nocolor"]
 high_pct = 0
 high_index = 3
 
+pcts = [0,0,0]
+
 while(True):
     frame_count += 1
 
@@ -224,11 +238,9 @@ while(True):
       
         # how much has changed
         curr_scores = calc_color_score(curr_frames)
-
-        pct = 0
-        high_pct = 0
-        high_index = 3
-
+        
+        pcts = [0,0,0]
+        
         for i in range(0,2):  # just red and yellow
             # we only care about INCREASES
             diff = curr_scores[i] - prev_scores[i]
@@ -236,18 +248,25 @@ while(True):
                 if prev_scores[i] > 0:
                     pct = diff / prev_scores[i] * 100
                     pct = int(round(pct))
-                    if pct > high_pct:
-                        high_pct = pct
-                        high_index = i
-        
-        #print(which_color[high_index], high_pct)
+                    pcts[i] = pct
         
         if state == STATE_NONE:
-            if high_pct > Config.motion_threshold_percent:
+            pct = 0
+            color = ""
+            if pcts[0] > Config.red_threshold_percent:
+                pct = pcts[0]
+                color = "red"
+            if pcts[1] > Config.yellow_threshold_percent:
+                pct = pcts[1]
+                color = "yellow"
+            if pcts[2] > Config.blue_threshold_percent:
+                pct = pcts[2]
+                color = "blue"
+            if pct > 0:
                 change_state(STATE_RECORDING)
                 filename =  "./videos/video_" \
                     + time.strftime("%Y-%m-%d-%H-%M-%S_") \
-                    + which_color[high_index] + str(high_pct) + ".mp4"
+                    + color + str(pct) + ".mp4"
                 print(filename)
                 if Config.create_video == 1:
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
@@ -261,8 +280,10 @@ while(True):
         prev_scores = curr_scores
         prev_time = now
 
+    #print(pcts)
+    
     # text on image
-    text_on_image = str(high_pct) + "," + which_color[high_index] + "," + state + "," + str(fps)
+    text_on_image = str(pcts[0]) + "," + str(pcts[1]) + "," + str(pcts[2]) + "," + state + "," + str(fps)
     cv2.putText(orig, text_on_image,
         (10, len(orig) - 20  ), font, 
         .8, (255,255,0), 2, cv2.LINE_AA)

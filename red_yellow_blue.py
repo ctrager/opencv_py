@@ -5,9 +5,7 @@ import time
 # color calculator
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
-    gauss_blur = 9
-    screen_scale_factor = .2
-    # 0-255
+    framerate = 24
     red_lightness = 50
     red_saturation = 50
     yellow_lightness = 50
@@ -22,7 +20,6 @@ class Config:
     motion_threshold_percent = 20
     recording_length_in_seconds = 8
     cooldown_in_seconds = 12
-    framerate = 24
     create_video = 0
     width = 1920
     height = 1080
@@ -33,19 +30,15 @@ class Config:
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
-    rect_points = ((60,60),(260,290))
+    rect_points = ((60,25),(250,290))
     kernel = np.ones((5,5),np.uint8)
 
-ORIGINAL_FRAME = 0
-DIFF_FRAME = 1
 STATE_NONE = "none"
 STATE_RECORDING = "recording"
 STATE_COOLDOWN = "cooldown"
 
 state = STATE_NONE
 state_start_time = 0
-
-prev_frame = []
 
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -62,11 +55,6 @@ pixel_count = (bottom_right[0] - top_left[0]) * (bottom_right[1] - top_left[1])
 def prep_frame_for_video(frame):
     img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
     img = cv2.resize(img, Config.new_size_for_video)
-    return img
-
-def prep_frame_for_analysis(frame):
-    img = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
-    img = cv2.resize(img, Config.new_size_for_analysis)
     return img
 
 def current_milliseconds():
@@ -133,9 +121,8 @@ cv2.setTrackbarPos("yellow_saturation", "window1", Config.yellow_saturation)
 
 def process_frame(frame):
     
-    # resize
-    small_frame = prep_frame_for_analysis(frame)
-
+    cropped_frame = frame[Config.crop_y1:Config.crop_y2, Config.crop_x1:Config.crop_x2]
+    small_frame = cv2.resize(cropped_frame, Config.new_size_for_analysis)
     gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
 
     # Convert BGR to HSV
@@ -158,8 +145,8 @@ def process_frame(frame):
         (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
         (Config.blue[1], 255, 255))
 
-    in_range_all_gray = cv2.bitwise_or(in_range_red1, in_range_red2)
-    in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_yellow)
+    in_range_red = cv2.bitwise_or(in_range_red1, in_range_red2)
+    in_range_all_gray = cv2.bitwise_or(in_range_red, in_range_yellow)
     in_range_all_gray = cv2.bitwise_or(in_range_all_gray, in_range_blue)
 
     gray_with_holes = cv2.bitwise_and(gray, gray, mask=255-in_range_all_gray)
@@ -173,69 +160,95 @@ def process_frame(frame):
     colors_without_gray = cv2.erode(colors_without_gray, Config.kernel)
     colors_without_gray = cv2.dilate(colors_without_gray, Config.kernel)
 
+    colors_without_gray = colors_without_gray[Config.rect_points[0][1]:Config.rect_points[1][1], Config.rect_points[0][0]:Config.rect_points[1][0]]
+
     return [small_frame, colors_without_gray, both]
+
+
+def calc_color_score(frames):
+
+    hsv = cv2.cvtColor(frames[1], cv2.COLOR_BGR2HSV)
+
+    # red crosses 0, so we need to ranges
+    in_range_red1 = cv2.inRange(hsv, 
+        (Config.red1[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red1[1], 255, 255))
+
+    in_range_red2 = cv2.inRange(hsv, 
+        (Config.red2[0], Config.red_saturation, Config.red_lightness), 
+        (Config.red2[1], 255, 255))
+
+    in_range_yellow = cv2.inRange(hsv, 
+        (Config.yellow[0], Config.yellow_saturation, Config.yellow_lightness), 
+        (Config.yellow[1], 255, 255))
+
+    in_range_blue = cv2.inRange(hsv, 
+        (Config.blue[0], Config.blue_saturation, Config.blue_lightness), 
+        (Config.blue[1], 255, 255))
+
+    in_range_red = cv2.bitwise_or(in_range_red1, in_range_red2)
+
+    red = np.sum(in_range_red, dtype=np.int64)
+    blue = np.sum(in_range_blue, dtype=np.int64)
+    yellow = np.sum(in_range_yellow, dtype=np.int64)
+    return [red, yellow, blue]
 
 #video_capture = cv2.VideoCapture(0)
 video_capture = start_video()
 
 # get first frame
 ret, frame = video_capture.read()
-print(len([frame][0][0]), len(frame))
-prev_frame = process_frame(frame)[DIFF_FRAME]
-
-def calc_color_score(img):
-    # is the image getting redder?
-    b = np.sum(img[:,:,0], dtype=np.int64)
-    g = np.sum(img[:,:,1], dtype=np.int64)
-    r = np.sum(img[:,:,2], dtype=np.int64)
-    ratio = 0
-    if b + g > 0:
-        ratio = r/(b + g)
-    return ratio
-
-prev_color_score = calc_color_score(prev_frame)
-
-# just for display purposes
-delta_bgr = prev_frame
+processed_frames = process_frame(frame)
+prev_scores = calc_color_score(processed_frames)
 
 prev_time = current_milliseconds()
 start_time = prev_time
+
+which_color = ["red", "yellow", "blue", "nocolor"]
+high_pct = 0
+high_index = 3
 
 while(True):
     frame_count += 1
 
     now = current_milliseconds()
 
-    altered_frames = process_frame(frame)
-    orig = altered_frames[ORIGINAL_FRAME]
+    curr_frames = process_frame(frame)
+    orig = curr_frames[0]
+    diff_frame = curr_frames[1]
 
     if now - prev_time > Config.interval_in_milliseconds:
         elapsed_seconds = (now - start_time)/1000
         fps = round(frame_count/elapsed_seconds)
       
         # how much has changed
+        curr_scores = calc_color_score(curr_frames)
 
-        curr_frame = altered_frames[DIFF_FRAME][top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-    
-        curr_color_score = calc_color_score(curr_frame)
+        pct = 0
+        high_pct = 0
+        high_index = 3
 
-        diff = abs(curr_color_score - prev_color_score)
-        if prev_color_score > 0:
-            pct = diff / prev_color_score * 100
-        else:
-            pct = 0
-
-        motion_percent = int(round(pct))
-        print(motion_percent)
-
+        for i in range(0,2):  # just red and yellow
+            # we only care about INCREASES
+            diff = curr_scores[i] - prev_scores[i]
+            if diff > 0:
+                if prev_scores[i] > 0:
+                    pct = diff / prev_scores[i] * 100
+                    pct = int(round(pct))
+                    if pct > high_pct:
+                        high_pct = pct
+                        high_index = i
+        
+        print(which_color[high_index], high_pct)
+        
         if state == STATE_NONE:
-            if motion_percent > Config.motion_threshold_percent:
+            if high_pct > Config.motion_threshold_percent:
                 change_state(STATE_RECORDING)
+                filename =  "./videos/video_" \
+                    + time.strftime("%Y-%m-%d-%H-%M-%S_") \
+                    + which_color[high_index] + str(high_pct) + ".mp4"
+                print(filename)
                 if Config.create_video == 1:
-                    filename =  "./videos/video_" \
-                        + time.strftime("%Y-%m-%d-%H-%M-%S") \
-                        + "_pct" + str(motion_percent) + ".mp4"
-                    print(filename)
                     video_file = cv2.VideoWriter(filename, fourcc, Config.framerate, 
                         Config.new_size_for_video)
                     # print a couple seconds ago
@@ -243,25 +256,24 @@ while(True):
                         past_frame = prep_frame_for_video(item[0])
                         video_file.write(past_frame)
 
-        prev_frame = curr_frame
-        prev_color_score = curr_color_score
+        prev_frames = curr_frames
+        prev_scores = curr_scores
         prev_time = now
 
     # text on image
-    text_on_image = str(motion_percent) + "," + state + "," + str(fps)
+    text_on_image = str(high_pct) + "," + which_color[high_index] + "," + state + "," + str(fps)
     cv2.putText(orig, text_on_image,
         (10, len(orig) - 20  ), font, 
         .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
-    cv2.rectangle(altered_frames[2], top_left, bottom_right, (255,255,0), 1)
- 
-    padded_frame = cv2.copyMakeBorder(prev_frame, 
-        0, len(orig) - len(prev_frame), 0, len(orig[0]) - len(prev_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
+    cv2.rectangle(curr_frames[2], top_left, bottom_right, (255,255,0), 1)
+    padded_frame = cv2.copyMakeBorder(diff_frame, 
+        0, len(orig) - len(diff_frame), 0, len(orig[0]) - len(diff_frame[0]), cv2.BORDER_CONSTANT, value=(127,127,127))
     
     display_image = np.hstack([
         orig, 
-        altered_frames[2],
+        curr_frames[2],
         padded_frame
     ])
 
@@ -284,9 +296,9 @@ while(True):
             change_state(STATE_NONE)
 
     if state == STATE_NONE or state == STATE_COOLDOWN:
-        if len(queue) >= 60:
+        if len(queue) >= Config.framerate * 2:
             queue.pop(0)
-        if len(queue) < 60:
+        if len(queue) < Config.framerate * 2:
             queue.append([frame,motion_percent])
 
     # detect window closing

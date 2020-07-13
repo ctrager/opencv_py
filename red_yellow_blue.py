@@ -239,7 +239,7 @@ while(True):
                         high_pct = pct
                         high_index = i
         
-        print(which_color[high_index], high_pct)
+        #print(which_color[high_index], high_pct)
         
         if state == STATE_NONE:
             if high_pct > Config.motion_threshold_percent:

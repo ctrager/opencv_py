@@ -9,7 +9,7 @@ class Config:
     gauss_blur = 5
     framerate = 15
     queue_size = 45
-    interval_in_milliseconds = 400
+    interval_in_milliseconds = 0
     motion_threshold_percent = 20
     recording_length_in_seconds = 12
     cooldown_in_seconds = 12
@@ -34,6 +34,9 @@ STATE_COOLDOWN = "cooldown"
 
 state = STATE_NONE
 state_start_time = 0
+
+top_left = Config.rect_points[0]
+bottom_right = Config.rect_points[1]
 
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -85,27 +88,30 @@ cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshol
 
 video_capture = start_video()
 
-def process_frame(frame):
+def process_frame(frame, do_all):
     
     # resize
     small_frame = cv2.resize(frame, Config.new_size_for_display)
 
-    blur_frame  = cv2.GaussianBlur(small_frame,
-        (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+    if do_all:
+        cropped = small_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-    eroded = cv2.erode(blur_frame, Config.kernel)
-    dilated = cv2.dilate(eroded, Config.kernel)
-    
-    top_left = Config.rect_points[0]
-    bottom_right = Config.rect_points[1]
-    cropped = dilated[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-    
-    cv2.imshow("d", cropped)
-    return [small_frame, cropped]
+        blur_frame  = cv2.GaussianBlur(cropped,
+            (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
+
+        eroded = cv2.erode(blur_frame, Config.kernel)
+        dilated = cv2.dilate(eroded, Config.kernel)
+
+        gray = cv2.cvtColor(dilated, cv2.COLOR_BGR2GRAY)
+
+        #cv2.imshow("d", gray)
+        return [small_frame, gray]
+    else:
+        return [small_frame]
 
 ret, frame = video_capture.read()
 print(len([frame][0][0]), len(frame))
-prev_frame = process_frame(frame)[DIFF_FRAME]
+prev_frame = process_frame(frame, True)[DIFF_FRAME]
 
 prev_time = current_milliseconds()
 start_time = prev_time
@@ -114,21 +120,17 @@ while(True):
     frame_count += 1
 
     now = current_milliseconds()
-
-    frames = process_frame(frame)
-    orig = frames[ORIGINAL_FRAME]
-    curr_frame = frames[DIFF_FRAME]
-    
+   
     if now - prev_time > Config.interval_in_milliseconds:
+        frames = process_frame(frame, True)
         elapsed_seconds = (now - start_time)/1000
         fps = round(frame_count/elapsed_seconds)
       
         # # how much has changed
-        diff = cv2.absdiff(curr_frame, prev_frame)
+        diff = cv2.absdiff(frames[1], prev_frame)
         sum_diff = np.sum(diff, dtype=np.int64)
-        sum_curr_frame = np.sum(curr_frame, dtype=np.int64)
-        sum_prev_frame = np.sum(prev_frame)
-        pct = sum_diff/sum_prev_frame * 3
+        sum_prev_frame = np.sum(prev_frame, dtype=np.int64)
+        pct = sum_diff/sum_prev_frame * 5
         motion_percent = int(round(pct * 100))
 
         if state == STATE_NONE:
@@ -146,22 +148,24 @@ while(True):
                         past_frame = prep_frame_for_video(item[0])
                         video_file.write(past_frame)
 
-        prev_frame = curr_frame
+        prev_frame = frames[1]
         prev_time = now
+    else:
+        frames = process_frame(frame, False)
 
     # text on image
     text_on_image = str(motion_percent)+ "," + state + "," + str(fps)
-    cv2.putText(orig, text_on_image,
-         (10, len(orig) - 20  ), font, 
+    cv2.putText(frames[0], text_on_image,
+         (10, len(frames[0]) - 20  ), font, 
          .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
     top_left = Config.rect_points[0]
     bottom_right = Config.rect_points[1]
-    cv2.rectangle(orig, top_left, bottom_right, (255,255,0), 1)
+    cv2.rectangle(frames[0], top_left, bottom_right, (255,255,0), 1)
 
     display_image = np.hstack([
-        orig
+        frames[0]
     ])
 
     cv2.imshow('window1',display_image)

@@ -27,12 +27,12 @@ class Config:
     height = 1080
     crop_y1 = 0
     crop_y2 = 960
-    crop_x1 = 495
-    crop_x2 = 1425
+    crop_x1 = 830
+    crop_x2 = 1760
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
-    rect_points = ((60,25),(250,290))
+    rect_points = ((70,50),(250,290))
     kernel = np.ones((5,5),np.uint8)
 
 STATE_NONE = "none"
@@ -174,7 +174,8 @@ def process_frame(frame):
 
     colors_without_gray = colors_without_gray[Config.rect_points[0][1]:Config.rect_points[1][1], Config.rect_points[0][0]:Config.rect_points[1][0]]
 
-    colors_without_gray[0:90, 140:, :] = (40,40,40)
+    #gray out an area
+    #colors_without_gray[0:90, 140:, :] = (40,40,40)
     return [small_frame, colors_without_gray, both]
 
 

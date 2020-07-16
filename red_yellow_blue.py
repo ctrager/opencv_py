@@ -15,7 +15,7 @@ class Config:
     red1 = (166,180)
     red2 = (0, 14)
     yellow = (25,32)
-    blue = (110, 130)
+    blue = (101, 139)
     interval_in_milliseconds = 400
     red_threshold_percent = 20
     yellow_threshold_percent = 20

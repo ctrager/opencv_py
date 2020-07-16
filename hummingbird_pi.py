@@ -11,7 +11,7 @@ class Config:
     queue_size = 45
     interval_in_milliseconds = 0
     motion_threshold_percent = 20
-    recording_length_in_seconds = 12
+    recording_length_in_seconds = 20
     cooldown_in_seconds = 12
     create_video = 0
     width = 1920

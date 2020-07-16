@@ -32,7 +32,7 @@ class Config:
     # new size is 930 X 960
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (620,640) # 2/3 size
-    rect_points = ((70,50),(250,290))
+    rect_points = ((70,0),(250,290))
     kernel = np.ones((5,5),np.uint8)
 
 STATE_NONE = "none"

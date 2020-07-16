@@ -85,17 +85,17 @@ cv2.setTrackbarPos("create_video", "window1", Config.create_video)
 
 def handle_red_threshold_percent(arg1):
     Config.red_threshold_percent = arg1
-cv2.createTrackbar("red_threshold_percent", "window1", 0, 80, handle_red_threshold_percent)
+cv2.createTrackbar("red_threshold_percent", "window1", 0, 150, handle_red_threshold_percent)
 cv2.setTrackbarPos("red_threshold_percent", "window1", Config.red_threshold_percent)
 
 def handle_yellow_threshold_percent(arg1):
     Config.yellow_threshold_percent = arg1
-cv2.createTrackbar("yellow_threshold_percent", "window1", 0, 80, handle_yellow_threshold_percent)
+cv2.createTrackbar("yellow_threshold_percent", "window1", 0, 150, handle_yellow_threshold_percent)
 cv2.setTrackbarPos("yellow_threshold_percent", "window1", Config.yellow_threshold_percent)
 
 def handle_blue_threshold_percent(arg1):
     Config.blue_threshold_percent = arg1
-cv2.createTrackbar("blue_threshold_percent", "window1", 0, 80, handle_blue_threshold_percent)
+cv2.createTrackbar("blue_threshold_percent", "window1", 0, 150, handle_blue_threshold_percent)
 cv2.setTrackbarPos("blue_threshold_percent", "window1", Config.blue_threshold_percent)
 
 # red
@@ -242,7 +242,7 @@ while(True):
         
         pcts = [0,0,0]
         
-        for i in range(0,2):  # just red and yellow
+        for i in range(0,3):  # 0,2 - no blue, 0,3 all colors
             # we only care about INCREASES
             diff = curr_scores[i] - prev_scores[i]
             if diff > 0:

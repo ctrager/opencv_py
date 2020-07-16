@@ -23,7 +23,7 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (960,540) 
     new_size_for_display = (640, 360)
-    rect_points = ((110,45),(300,265))
+    rect_points = ((110,70),(320,310))
     kernel = np.ones((5,5),np.uint8)
 
 ORIGINAL_FRAME = 0
@@ -73,8 +73,8 @@ def handle_gauss_blur(arg1):
     Config.gauss_blur = arg1
     if Config.gauss_blur % 2 == 0:
         Config.gauss_blur = Config.gauss_blur + 1
-cv2.createTrackbar("blur", "window1", 0, 20, handle_gauss_blur)
-cv2.setTrackbarPos("blur", "window1", Config.gauss_blur)
+#cv2.createTrackbar("blur", "window1", 0, 20, handle_gauss_blur)
+#cv2.setTrackbarPos("blur", "window1", Config.gauss_blur)
 
 def handle_create_video(arg1):
     Config.create_video = arg1

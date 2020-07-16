@@ -223,6 +223,7 @@ high_pct = 0
 high_index = 3
 
 pcts = [0,0,0]
+video_file = None
 
 while(True):
     frame_count += 1
@@ -305,13 +306,14 @@ while(True):
     if state == STATE_RECORDING:
         if now - state_start_time > (Config.recording_length_in_seconds * 1000):
             # finish recording
-            if Config.create_video == 1:
+            if video_file != None:
                 video_file.release()
+                video_file = None
             change_state(STATE_COOLDOWN)
         else:
             # continue recording
             frame_for_video = prep_frame_for_video(frame)
-            if Config.create_video == 1:
+            if video_file != None:
                 video_file.write(frame_for_video)
     
     elif state == STATE_COOLDOWN:

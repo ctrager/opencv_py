@@ -166,8 +166,8 @@ while(True):
                         Config.new_size_for_video)
                     # print a couple seconds ago
                     for item in queue:
-                        past_frame = cv2.resize(item[0], Config.new_size_for_video)
-                        video_file.write(past_frame)
+                        video_file.write(item)
+                    queue.clear()    
 
         prev_frame = frames[1]
         prev_time = now
@@ -199,9 +199,9 @@ while(True):
             change_state(STATE_COOLDOWN)
         else:
             # continue recording
-            frame_for_video = cv2.resize(frame, Config.new_size_for_video)
+            frame_sized_for_video = cv2.resize(frame, Config.new_size_for_video)
             if Config.create_video == 1:
-                video_file.write(frame_for_video)
+                video_file.write(frame_sized_for_video)
     
     elif state == STATE_COOLDOWN:
         if now - state_start_time > (Config.cooldown_in_seconds * 1000):
@@ -211,7 +211,8 @@ while(True):
         if len(queue) >= Config.queue_size:
             queue.pop(0)
         if len(queue) < Config.queue_size:
-            queue.append([frame,motion_percent])
+            frame_sized_for_video = cv2.resize(frame, Config.new_size_for_video)
+            queue.append(frame_sized_for_video)
 
     # detect window closing
     key = cv2.waitKey(1) 

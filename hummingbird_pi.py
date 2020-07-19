@@ -145,11 +145,14 @@ while(True):
         fps = round(frame_count/elapsed_seconds)
       
         # # how much has changed
-        diff = cv2.absdiff(frames[1], prev_frame)
-        sum_diff = np.sum(diff, dtype=np.int64)
-        sum_prev_frame = np.sum(prev_frame, dtype=np.int64)
-        pct = sum_diff/sum_prev_frame * 5
-        motion_percent = int(round(pct * 100))
+        try:
+            diff = cv2.absdiff(frames[1], prev_frame)
+            sum_diff = np.sum(diff, dtype=np.int64)
+            sum_prev_frame = np.sum(prev_frame, dtype=np.int64)
+            pct = sum_diff/sum_prev_frame * 5
+            motion_percent = int(round(pct * 100))
+        except:
+            motion_percent = 0
 
         if state == STATE_NONE:
             if motion_percent > Config.motion_threshold_percent:

@@ -122,7 +122,7 @@ def process_frame(frame, do_all):
 
         gray = cv2.cvtColor(dilated, cv2.COLOR_BGR2GRAY)
 
-        cv2.imshow("d", gray)
+        #cv2.imshow("d", gray)
         return [small_frame, gray]
     else:
         return [small_frame]

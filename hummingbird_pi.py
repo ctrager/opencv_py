@@ -23,8 +23,12 @@ class Config:
     new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (960,540) 
     new_size_for_display = (640, 360)
-    rect_points = ((110,70),(320,310))
     kernel = np.ones((5,5),np.uint8)
+    rect_left = 260
+    rect_top = 25
+    rect_right = 420
+    rect_bottom = 255
+
 
 ORIGINAL_FRAME = 0
 DIFF_FRAME = 1
@@ -35,9 +39,6 @@ STATE_COOLDOWN = "cooldown"
 state = STATE_NONE
 state_start_time = 0
 
-top_left = Config.rect_points[0]
-bottom_right = Config.rect_points[1]
-
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX
 motion_percent = 0
@@ -45,10 +46,6 @@ frame_count = 0
 fps = 0
  
 queue = []
-
-def prep_frame_for_video(frame):
-    img = cv2.resize(frame, Config.new_size_for_video)
-    return img
 
 def current_milliseconds():
     return round(time.time() * 1000)
@@ -86,6 +83,27 @@ def handle_motion_threshold_percent(arg1):
 cv2.createTrackbar("motion_threshold_percent", "window1", 0, 50, handle_motion_threshold_percent)
 cv2.setTrackbarPos("motion_threshold_percent", "window1", Config.motion_threshold_percent)
 
+def handle_left(arg1):
+    Config.rect_left = arg1
+cv2.createTrackbar("left", "window1", 0, Config.new_size_for_display[0], handle_left)
+cv2.setTrackbarPos("left", "window1", Config.rect_left)
+
+def handle_top(arg1):
+    Config.rect_top = arg1
+cv2.createTrackbar("top", "window1", 0, Config.new_size_for_display[1], handle_top)
+cv2.setTrackbarPos("top", "window1", Config.rect_top)
+
+def handle_right(arg1):
+    Config.rect_right = arg1
+cv2.createTrackbar("right", "window1", 0, Config.new_size_for_display[0], handle_right)
+cv2.setTrackbarPos("right", "window1", Config.rect_right)
+
+def handle_bottom(arg1):
+    Config.rect_bottom = arg1
+cv2.createTrackbar("bottom", "window1", 0, Config.new_size_for_display[1], handle_bottom)
+cv2.setTrackbarPos("bottom", "window1", Config.rect_bottom)
+
+
 video_capture = start_video()
 
 def process_frame(frame, do_all):
@@ -94,7 +112,7 @@ def process_frame(frame, do_all):
     small_frame = cv2.resize(frame, Config.new_size_for_display)
 
     if do_all:
-        cropped = small_frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+        cropped = small_frame[Config.rect_top:Config.rect_bottom, Config.rect_left:Config.rect_right]
 
         blur_frame  = cv2.GaussianBlur(cropped,
             (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
@@ -104,7 +122,7 @@ def process_frame(frame, do_all):
 
         gray = cv2.cvtColor(dilated, cv2.COLOR_BGR2GRAY)
 
-        #cv2.imshow("d", gray)
+        cv2.imshow("d", gray)
         return [small_frame, gray]
     else:
         return [small_frame]
@@ -145,7 +163,7 @@ while(True):
                         Config.new_size_for_video)
                     # print a couple seconds ago
                     for item in queue:
-                        past_frame = prep_frame_for_video(item[0])
+                        past_frame = cv2.resize(item[0], Config.new_size_for_video)
                         video_file.write(past_frame)
 
         prev_frame = frames[1]
@@ -160,8 +178,8 @@ while(True):
          .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
-    top_left = Config.rect_points[0]
-    bottom_right = Config.rect_points[1]
+    top_left = (Config.rect_left, Config.rect_top)
+    bottom_right = (Config.rect_right, Config.rect_bottom)
     cv2.rectangle(frames[0], top_left, bottom_right, (255,255,0), 1)
 
     display_image = np.hstack([
@@ -178,7 +196,7 @@ while(True):
             change_state(STATE_COOLDOWN)
         else:
             # continue recording
-            frame_for_video = prep_frame_for_video(frame)
+            frame_for_video = cv2.resize(frame, Config.new_size_for_video)
             if Config.create_video == 1:
                 video_file.write(frame_for_video)
     

@@ -1,9 +1,6 @@
 import numpy as np
 import cv2
 import time
-
-# color calculator
-# https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     framerate = 24
     red_lightness = 50
@@ -177,7 +174,6 @@ def process_frame(frame):
     #gray out an area
     #colors_without_gray[0:90, 140:, :] = (40,40,40)
     return [small_frame, colors_without_gray, both]
-
 
 def calc_color_score(frames):
 

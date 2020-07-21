@@ -27,5 +27,3 @@ nonzero = cv2.countNonZero(gray)
 print(diff)
 print(gray)
 print(nonzero)
-
-

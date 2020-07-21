@@ -140,9 +140,6 @@ for filename in filenames:
             pct = int(round(pct))
             pcts.append(pct)
             
-           
-
-
         #cv2.imshow("f", frame) 
         #text_on_image = str(motion_percent) + "," + str(cnt)
         #cv2.putText(processed_frame, text_on_image,

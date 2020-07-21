@@ -18,7 +18,6 @@ class Config:
     rect_points = ((320,20), (420,190))
     root_dir = "//home/corey/Downloads/hum/"
 
-
 fourcc = cv2.VideoWriter_fourcc(*'avc1')
 font = cv2.FONT_HERSHEY_SIMPLEX    
 

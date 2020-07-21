@@ -103,7 +103,6 @@ def handle_bottom(arg1):
 cv2.createTrackbar("bottom", "window1", 0, Config.new_size_for_display[1], handle_bottom)
 cv2.setTrackbarPos("bottom", "window1", Config.rect_bottom)
 
-
 video_capture = start_video()
 
 def process_frame(frame, do_all):

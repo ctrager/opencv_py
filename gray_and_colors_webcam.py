@@ -4,7 +4,6 @@ import time
 
 # build windows
 cv2.namedWindow("window1", cv2.WINDOW_AUTOSIZE)
-
 class Config:
     saturation = 90
     lightness = 20
@@ -30,7 +29,6 @@ def handle_blue_green(val):
     Config.blue_green = val
 cv2.createTrackbar("blue_green", "window1", 0, 180, handle_blue_green)
 cv2.setTrackbarPos("blue_green", "window1", Config.blue_green)
-
 
 def prep_frame_for_video(frame):
 
@@ -59,7 +57,6 @@ def prep_frame_for_video(frame):
     both = cv2.bitwise_or(gray_without_red_bgr, just_red)
 
     return [frame, both]
-
 
 video_capture = cv2.VideoCapture(0)
 #video_capture = cv2.VideoCapture(
@@ -96,11 +93,9 @@ while(True):
         #curr_histr = cv2.calcHist(curr_frame, [2], None, [256], [0,256])
         # print(curr_hist)
 
-
         prev_frame = curr_frame
         prev_hist = curr_hist
         prev_time = now
-    
     
     cv2.imshow("window1", np.hstack(frames))
 
@@ -115,7 +110,6 @@ while(True):
 
     # get next frame
     ret, frame = video_capture.read()
-
 
 # clean up
 video_capture.release()

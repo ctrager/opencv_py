@@ -2,27 +2,24 @@
 import numpy as np
 import cv2
 import time
-
-# color calculator
-# https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     gauss_blur = 5
     framerate = 15
     queue_size = 45
     interval_in_milliseconds = 0
     motion_threshold_percent = 20
-    recording_length_in_seconds = 20
+    recording_length_in_seconds = 15
     cooldown_in_seconds = 12
     create_video = 0
-    width = 1920
-    height = 1080
+    width = 2304  # 576 768 1152
+    height = 1296  # 324  432  648
     crop_y1 = 0
     crop_y2 = 960
     crop_x1 = 495
     crop_x2 = 1425
-    new_size_for_analysis = (310,320) # 1/3 size
-    new_size_for_video = (960,540) 
-    new_size_for_display = (640, 360)
+    new_size_for_analysis = (576,234) # 1/4 size
+    new_size_for_video = (1152,648) 
+    new_size_for_display = (768, 432)
     kernel = np.ones((5,5),np.uint8)
     rect_left = 260
     rect_top = 25

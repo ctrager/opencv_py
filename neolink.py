@@ -7,7 +7,7 @@ class Config:
     framerate = 15
     queue_size = 45
     interval_in_milliseconds = 0
-    motion_threshold_percent = 20
+    motion_threshold_percent = 30
     recording_length_in_seconds = 15
     cooldown_in_seconds = 12
     create_video = 0
@@ -17,14 +17,13 @@ class Config:
     crop_y2 = 960
     crop_x1 = 495
     crop_x2 = 1425
-    new_size_for_analysis = (576,234) # 1/4 size
     new_size_for_video = (1152,648) 
     new_size_for_display = (768, 432)
     kernel = np.ones((5,5),np.uint8)
-    rect_left = 260
-    rect_top = 25
-    rect_right = 420
-    rect_bottom = 255
+    rect_left = 0
+    rect_top = 120
+    rect_right = 768
+    rect_bottom = 432
 
 
 ORIGINAL_FRAME = 0
@@ -108,7 +107,7 @@ def process_frame(frame, do_all):
     small_frame = cv2.resize(frame, Config.new_size_for_display)
 
     if do_all:
-        cropped = small_frame #[Config.rect_top:Config.rect_bottom, Config.rect_left:Config.rect_right]
+        cropped = small_frame[Config.rect_top:Config.rect_bottom, Config.rect_left:Config.rect_right]
 
         blur_frame  = cv2.GaussianBlur(cropped,
             (Config.gauss_blur, Config.gauss_blur), cv2.BORDER_CONSTANT)
@@ -177,9 +176,9 @@ while(True):
          .8, (255,255,0), 2, cv2.LINE_AA)
 
     # rectange on image    
-    #top_left = (Config.rect_left, Config.rect_top)
-    #bottom_right = (Config.rect_right, Config.rect_bottom)
-    #cv2.rectangle(frames[0], top_left, bottom_right, (255,255,0), 1)
+    top_left = (Config.rect_left, Config.rect_top)
+    bottom_right = (Config.rect_right, Config.rect_bottom)
+    cv2.rectangle(frames[0], top_left, bottom_right, (255,255,0), 1)
 
     display_image = np.hstack([
         frames[0]

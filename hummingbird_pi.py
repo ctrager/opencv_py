@@ -20,7 +20,6 @@ class Config:
     crop_y2 = 960
     crop_x1 = 495
     crop_x2 = 1425
-    new_size_for_analysis = (310,320) # 1/3 size
     new_size_for_video = (960,540) 
     new_size_for_display = (640, 360)
     kernel = np.ones((5,5),np.uint8)

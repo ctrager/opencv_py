@@ -7,8 +7,8 @@ import time
 # https://alloyui.com/examples/color-picker/hsv.html
 class Config:
     gauss_blur = 5
-    framerate = 15
-    queue_size = 45
+    framerate = 10
+    queue_size = 30
     interval_in_milliseconds = 0
     motion_threshold_percent = 20
     recording_length_in_seconds = 20

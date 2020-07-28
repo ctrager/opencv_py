@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import time
 class Config:
+    url = "rtsp://admin:password1@10.0.0.27:554/cam/realmonitor?channel=1&subtype=0"
     framerate = 24
     red_lightness = 50
     red_saturation = 50
@@ -68,8 +69,7 @@ def change_state(new_state):
     print(now_string, "state", state, new_state)
 
 def start_video():
-    video_capture = cv2.VideoCapture(
-        "rtsp://admin:password1@10.0.0.7:554/cam/realmonitor?channel=1&subtype=0")
+    video_capture = cv2.VideoCapture(Config.url)
     return video_capture
 
 # build windows

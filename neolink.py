@@ -3,9 +3,11 @@ import numpy as np
 import cv2
 import time
 class Config:
+#    url = "rtsp://10.0.0.8:8554/one"
+    url = "rtsp://127.0.0.1:8554/one"
     gauss_blur = 5
-    framerate = 15
-    queue_size = 45
+    framerate = 12
+    queue_size = 36
     interval_in_milliseconds = 0
     motion_threshold_percent = 30
     recording_length_in_seconds = 15
@@ -26,8 +28,6 @@ class Config:
     rect_bottom = 432
 
 
-ORIGINAL_FRAME = 0
-DIFF_FRAME = 1
 STATE_NONE = "none"
 STATE_RECORDING = "recording"
 STATE_COOLDOWN = "cooldown"
@@ -55,8 +55,7 @@ def change_state(new_state):
     print(now_string, "state", state, new_state)
 
 def start_video():
-    video_capture = cv2.VideoCapture(
-       "rtsp://127.0.0.1:8554/one")
+    video_capture = cv2.VideoCapture(Config.url)
     return video_capture
 
 # build windows
@@ -117,14 +116,14 @@ def process_frame(frame, do_all):
 
         gray = cv2.cvtColor(dilated, cv2.COLOR_BGR2GRAY)
 
-        #cv2.imshow("d", gray)
+        cv2.imshow("d", gray)
         return [small_frame, gray]
     else:
         return [small_frame]
 
 ret, frame = video_capture.read()
 print(len([frame][0][0]), len(frame))
-prev_frame = process_frame(frame, True)[DIFF_FRAME]
+prev_frame = process_frame(frame, True)[1]
 
 prev_time = current_milliseconds()
 start_time = prev_time
@@ -226,7 +225,7 @@ while(True):
             if (ret == False):
                 print(time.strftime("%Y-%m-%d %H:%M:%S"))
                 print("reading frame returned false")
-                time.sleep(1)
+                time.sleep(0.05)
                 try:
                     video_capture.release()
                 except:
@@ -235,7 +234,7 @@ while(True):
         except:
             print(time.strftime("%Y-%m-%d %H:%M:%S"))
             print("reading frame threw exception")
-            time.sleep(1)
+            time.sleep(0.05)
   
 # clean up
 video_capture.release()

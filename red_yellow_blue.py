@@ -1,3 +1,5 @@
+# sudo apt install python3-opencv
+
 import numpy as np
 import cv2
 import time
